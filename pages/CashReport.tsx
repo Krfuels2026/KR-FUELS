@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Account, Voucher } from '../types';
 import { formatCurrency, formatDateToDDMMYYYY } from '../utils';
-import { Printer, Filter, TrendingUp, History, Calendar, FileSpreadsheet, FileText, ChevronDown } from 'lucide-react';
+import { Printer, Filter, TrendingUp, History, Calendar, FileSpreadsheet, FileText, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, X } from 'lucide-react';
 
 interface CashReportProps {
   accounts: Account[];
@@ -10,14 +10,20 @@ interface CashReportProps {
   onDeleteVoucher: (id: string) => void;
 }
 
-type FilterType = 'daily' | 'ytd' | 'financial_year' | 'custom';
+type FilterType = 'daily' | 'monthly' | 'ytd' | 'financial_year' | 'custom';
 
 const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVoucher }) => {
   const [filterType, setFilterType] = useState<FilterType>('daily');
+  const [showFilterPopup, setShowFilterPopup] = useState(false);
   
   const [selectedYear, setSelectedYear] = useState(() => {
     const now = new Date();
     return now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+  });
+
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
   const [customRange, setCustomRange] = useState({
@@ -46,6 +52,11 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     switch (filterType) {
       case 'daily':
         return { from: customRange.from, to: customRange.from };
+      case 'monthly': {
+        const [y, m] = selectedMonth.split('-').map(Number);
+        const lastDay = new Date(y, m, 0).getDate();
+        return { from: `${y}-${String(m).padStart(2, '0')}-01`, to: `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}` };
+      }
       case 'ytd':
         return { from: `${currentYear}-01-01`, to: today.toISOString().split('T')[0] };
       case 'financial_year':
@@ -59,7 +70,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
 
   const range = getEffectiveRange();
 
-  const handleOpenPicker = (ref: React.RefObject<HTMLInputElement>) => {
+  const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) {
       try {
         if ('showPicker' in HTMLInputElement.prototype) {
@@ -100,7 +111,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   }, [range, vouchers, accounts]);
 
   const handleExportExcel = () => {
-    const headers = ['DATE', 'DESCRIPTION', 'LEDGER', 'INFLOW (CR)', 'OUTFLOW (DR)'];
+    const headers = ['DATE', 'DESCRIPTION', 'LEDGER', 'CREDIT (CR)', 'DEBIT (DR)'];
     const rows = reportData.periodVouchers.map(v => [
       formatDateToDDMMYYYY(v.date),
       v.description.toUpperCase().replace(/,/g, ' '),
@@ -155,13 +166,21 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
           <div className="p-1.5 flex border-b border-slate-100 bg-slate-50/30">
             {[
               { id: 'daily', label: 'Daily', icon: Calendar },
+              { id: 'monthly', label: 'Monthly', icon: CalendarDays },
               { id: 'ytd', label: 'YTD', icon: TrendingUp },
               { id: 'financial_year', label: 'Financial Year', icon: History },
               { id: 'custom', label: 'Custom', icon: Filter },
             ].map(btn => (
               <button
                 key={btn.id}
-                onClick={() => setFilterType(btn.id as FilterType)}
+                onClick={() => {
+                  setFilterType(btn.id as FilterType);
+                  if (['daily', 'monthly', 'financial_year', 'custom'].includes(btn.id)) {
+                    setShowFilterPopup(true);
+                  } else {
+                    setShowFilterPopup(false);
+                  }
+                }}
                 className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${filterType === btn.id ? 'bg-brand text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 <btn.icon size={15} /> {btn.label}
@@ -169,90 +188,178 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
             ))}
           </div>
 
-          <div className="px-8 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
-              {filterType === 'daily' && (
-                <div className="space-y-2 flex-1">
-                  <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">Statement Date</label>
-                  <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(dailyInputRef)}>
-                    <div className="absolute inset-0 px-5 bg-white border border-[#e2e8f0] rounded-xl font-bold text-[14px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-sm">
-                       {formatDateToDDMMYYYY(customRange.from)}
-                    </div>
-                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
-                       <Calendar size={18} />
-                    </div>
-                    <input
-                      ref={dailyInputRef}
-                      type="date"
-                      className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
-                      value={customRange.from}
-                      onChange={e => setCustomRange({ from: e.target.value, to: e.target.value })}
-                    />
-                  </div>
-                </div>
-              )}
+        </div>
 
-              {filterType === 'financial_year' && (
-                <div className="space-y-2 flex-1">
-                  <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">Select Financial Year</label>
-                  <div className="relative h-[48px]">
-                    <select
-                      className="w-full px-5 bg-white border border-[#e2e8f0] rounded-xl text-[14px] font-bold text-slate-900 uppercase outline-none focus:border-brand appearance-none transition-all pr-12 h-full shadow-sm"
-                      value={selectedYear}
-                      onChange={e => setSelectedYear(Number(e.target.value))}
-                    >
-                      {availableYears.map(year => (
-                        <option key={year} value={year}>FY {year}-{year + 1}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        {/* Popup modal for Monthly / Financial Year / Custom filters */}
+        {showFilterPopup && (filterType === 'daily' || filterType === 'monthly' || filterType === 'financial_year' || filterType === 'custom') && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowFilterPopup(false)} />
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 bg-brand text-white rounded-lg flex items-center justify-center shadow-md">
+                    {filterType === 'daily' && <Calendar size={16} />}
+                    {filterType === 'monthly' && <CalendarDays size={16} />}
+                    {filterType === 'financial_year' && <History size={16} />}
+                    {filterType === 'custom' && <Filter size={16} />}
                   </div>
+                  <h2 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">
+                    {filterType === 'daily' && 'Select Date'}
+                    {filterType === 'monthly' && 'Select Month'}
+                    {filterType === 'financial_year' && 'Select Financial Year'}
+                    {filterType === 'custom' && 'Custom Date Range'}
+                  </h2>
                 </div>
-              )}
+                <button onClick={() => setShowFilterPopup(false)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all">
+                  <X size={18} />
+                </button>
+              </div>
 
-              {filterType === 'custom' && (
-                <>
-                  <div className="space-y-2 flex-1">
-                    <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">From Date</label>
-                    <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(customFromRef)}>
-                      <div className="absolute inset-0 px-5 bg-white border border-[#e2e8f0] rounded-xl font-bold text-[14px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-sm">
+              <div className="p-6 space-y-5">
+                {/* Daily picker */}
+                {filterType === 'daily' && (
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Statement Date</label>
+                    <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(dailyInputRef)}>
+                      <div className="absolute inset-0 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[13px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-inner">
                         {formatDateToDDMMYYYY(customRange.from)}
                       </div>
-                      <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
-                        <Calendar size={18} />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
+                        <Calendar size={16} />
                       </div>
                       <input
-                        ref={customFromRef}
+                        ref={dailyInputRef}
                         type="date"
                         className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
                         value={customRange.from}
-                        onChange={e => setCustomRange({ ...customRange, from: e.target.value })}
+                        onChange={e => setCustomRange({ from: e.target.value, to: e.target.value })}
                       />
                     </div>
                   </div>
-                  <div className="space-y-2 flex-1">
-                    <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">To Date</label>
-                    <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(customToRef)}>
-                      <div className="absolute inset-0 px-5 bg-white border border-[#e2e8f0] rounded-xl font-bold text-[14px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-sm">
-                        {formatDateToDDMMYYYY(customRange.to)}
+                )}
+
+                {/* Monthly picker */}
+                {filterType === 'monthly' && (
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Month & Year</label>
+                    <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm h-[48px]">
+                      <button
+                        onClick={() => {
+                          const [y, m] = selectedMonth.split('-').map(Number);
+                          const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+                          setSelectedMonth(prev);
+                        }}
+                        className="p-3 hover:bg-slate-50 text-slate-500 border-r border-slate-100 transition-colors"
+                      >
+                        <ChevronLeft size={18} strokeWidth={2.5} />
+                      </button>
+                      <div className="flex items-center justify-center gap-2.5 flex-1 px-4 cursor-default">
+                        <CalendarDays size={16} className="text-slate-500" />
+                        <span className="text-slate-900 font-bold text-[13px] uppercase tracking-widest tabular-nums">
+                          {(() => {
+                            const [y, m] = selectedMonth.split('-').map(Number);
+                            const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                            return `${monthNames[m - 1]} ${y}`;
+                          })()}
+                        </span>
                       </div>
-                      <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
-                        <Calendar size={18} />
-                      </div>
-                      <input
-                        ref={customToRef}
-                        type="date"
-                        className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
-                        value={customRange.to}
-                        onChange={e => setCustomRange({ ...customRange, to: e.target.value })}
-                      />
+                      <button
+                        onClick={() => {
+                          const [y, m] = selectedMonth.split('-').map(Number);
+                          const now = new Date();
+                          const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                          const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                          if (next <= currentMonth) setSelectedMonth(next);
+                        }}
+                        className={`p-3 border-l border-slate-100 text-slate-500 transition-colors ${
+                          (() => {
+                            const [y, m] = selectedMonth.split('-').map(Number);
+                            const now = new Date();
+                            const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                            const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+                            return next > currentMonth ? 'opacity-20 cursor-not-allowed' : 'hover:bg-slate-50';
+                          })()
+                        }`}
+                      >
+                        <ChevronRight size={18} strokeWidth={2.5} />
+                      </button>
                     </div>
                   </div>
-                </>
-              )}
+                )}
+
+                {/* Financial Year picker */}
+                {filterType === 'financial_year' && (
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Financial Year</label>
+                    <div className="relative h-[48px]">
+                      <select
+                        className="w-full px-5 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-900 uppercase outline-none focus:border-brand focus:bg-white appearance-none transition-all pr-12 h-full shadow-inner"
+                        value={selectedYear}
+                        onChange={e => setSelectedYear(Number(e.target.value))}
+                      >
+                        {availableYears.map(year => (
+                          <option key={year} value={year}>FY {year}-{year + 1}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={18} className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom range pickers */}
+                {filterType === 'custom' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">From Date</label>
+                      <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(customFromRef)}>
+                        <div className="absolute inset-0 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[13px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-inner">
+                          {formatDateToDDMMYYYY(customRange.from)}
+                        </div>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
+                          <Calendar size={16} />
+                        </div>
+                        <input
+                          ref={customFromRef}
+                          type="date"
+                          className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
+                          value={customRange.from}
+                          onChange={e => setCustomRange({ ...customRange, from: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">To Date</label>
+                      <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(customToRef)}>
+                        <div className="absolute inset-0 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[13px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-inner">
+                          {formatDateToDDMMYYYY(customRange.to)}
+                        </div>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 z-20 pointer-events-none group-hover:text-brand transition-colors">
+                          <Calendar size={16} />
+                        </div>
+                        <input
+                          ref={customToRef}
+                          type="date"
+                          className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer"
+                          value={customRange.to}
+                          onChange={e => setCustomRange({ ...customRange, to: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setShowFilterPopup(false)}
+                    className="w-full px-4 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover transition-all shadow-lg shadow-emerald-500/10"
+                  >
+                    Apply Filter
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-amber-500 transition-all hover:shadow-md">
@@ -290,8 +397,8 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
               <tr className="bg-slate-50 border-b border-slate-200 print:bg-slate-100">
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-40">Date</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description / Account</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Inflow (CR)</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Outflow (DR)</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Credit (CR)</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Debit (DR)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

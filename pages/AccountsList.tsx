@@ -138,8 +138,9 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
       />
 
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <h1 className="text-[15px] font-bold text-slate-900 uppercase tracking-tight">Ledger Registry</h1>
-        
+        <div>
+          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Ledger Registry</h1>
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />

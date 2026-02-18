@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo, useRef } from 'react';
-import { Account, Voucher } from '../types';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { Account, Voucher, Reminder } from '../types';
 import { formatCurrency, formatDateToDDMMYYYY } from '../utils';
 import { 
   ChevronLeft, 
@@ -20,9 +20,10 @@ interface DashboardProps {
   vouchers: Voucher[];
   locationName: string;
   onDeleteVoucher: (id: string) => void;
+  reminders?: Reminder[];
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName, onDeleteVoucher }) => {
+const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName, onDeleteVoucher, reminders = [] }) => {
   const getLocalISODate = (date: Date) => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -79,12 +80,21 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
     };
   }, [selectedDate, vouchers, accounts]);
 
+  // Calculate if a reminder is urgent (less than 24 hours to due date)
+  const isUrgent = (reminder: Reminder) => {
+    const selectedDateObj = new Date(selectedDate);
+    const dueDateObj = new Date(reminder.dueDate);
+    const timeDiff = dueDateObj.getTime() - selectedDateObj.getTime();
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+    return hoursDiff < 24;
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">
-          Dashboard <span className="mx-2 text-slate-300 font-normal">/</span> {locationName}
-        </h1>
+        <div>
+          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Dashboard <span className="mx-2 text-slate-300 font-normal">/</span> {locationName}</h1>
+        </div>
         
         <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <button onClick={() => navigateDay('prev')} className="p-3 hover:bg-slate-50 text-slate-500 border-r border-slate-100 transition-colors"><ChevronLeft size={18} strokeWidth={2.5} /></button>
@@ -148,41 +158,51 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-8 min-h-[500px]">
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6 min-h-[500px]">
           <div className="flex items-center gap-4 mb-2">
             <div className="w-9 h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={18} /></div>
-            <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Day Intelligence</h2>
+            <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Reminders</h2>
           </div>
           <div className="grid grid-cols-2 gap-6">
             <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
                <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><Zap size={18} /></div>
-               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Total Entries</p><p className="text-xl font-black text-slate-900 tabular-nums leading-none">{reportData.totalCount}</p></div>
+               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Active Reminders</p><p className="text-xl font-black text-slate-900 tabular-nums leading-none">{(reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).length}</p></div>
             </div>
             <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
                <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><BarChart3 size={18} /></div>
-               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Avg Value</p><p className="text-xl font-black text-slate-900 font-mono tracking-tighter leading-none">{formatCurrency(reportData.avgValue)}</p></div>
+               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Due Today</p><p className="text-xl font-black text-slate-900 font-mono tracking-tighter leading-none">{(reminders || []).filter(r => r.dueDate === selectedDate).length}</p></div>
             </div>
           </div>
-          <div className="space-y-4">
-            <div className="flex justify-between text-[11px] font-black uppercase tracking-widest">
-              <span className="text-green-800 flex items-center gap-2"><TrendingUp size={15} strokeWidth={3} /> {reportData.inflowCount} Credits</span>
-              <span className="text-rose-700 flex items-center gap-2">{reportData.outflowCount} Debits <TrendingDown size={15} strokeWidth={3} /></span>
-            </div>
-            <div className="h-3.5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-               <div className="h-full bg-green-700 transition-all duration-1000 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]" style={{ width: `${(reportData.totalCr / (reportData.totalCr + reportData.totalDr + 0.1)) * 100}%` }} />
-               <div className="h-full bg-rose-500 transition-all duration-1000 shadow-[inset_0_1px_2px_rgba(0,0,0,0.15)]" style={{ width: `${(reportData.totalDr / (reportData.totalCr + reportData.totalDr + 0.1)) * 100}%` }} />
-            </div>
-          </div>
-          <div className="pt-8 border-t border-slate-100">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-4 opacity-80">Dominant Business Category</p>
-            <div className="bg-green-50/80 border border-green-200 p-6 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-green-100 transition-all shadow-sm">
-              <div>
-                <p className="text-[16px] font-black text-green-900 uppercase tracking-tight leading-tight">{reportData.mostActiveGroup}</p>
-                <p className="text-[10px] font-bold text-green-700/70 uppercase tracking-widest mt-1.5">Primary High-Volume Sector</p>
-              </div>
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand group-hover:translate-x-1 transition-all shadow-sm">
-                <ArrowRight size={20} />
-              </div>
+          <div className="pt-2">
+            <div className="space-y-3">
+              { (reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).length === 0 && (
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider">No reminders for this date</p>
+              )}
+              { (reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).map(r => {
+                const urgent = isUrgent(r);
+                return (
+                  <div key={r.id} className={`p-4 border-l-4 rounded-lg flex items-start justify-between transition-all hover:shadow-md ${urgent ? 'bg-rose-50/80 border-rose-500' : 'bg-amber-50/80 border-amber-500'}`}>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${urgent ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
+                        <Clock size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${urgent ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
+                            {urgent ? 'URGENT' : 'WARNING'}
+                          </span>
+                        </div>
+                        <p className={`font-bold uppercase text-[12px] ${urgent ? 'text-rose-900' : 'text-amber-900'}`}>{r.title}</p>
+                        <p className={`text-[11px] mt-1 ${urgent ? 'text-rose-700' : 'text-amber-700'}`}>{r.description}</p>
+                        <p className={`text-[10px] mt-1.5 uppercase tracking-wider font-bold ${urgent ? 'text-rose-600' : 'text-amber-600'}`}>Due: {r.dueDate}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <a href="#/reminders" className={`text-[12px] font-bold hover:underline ${urgent ? 'text-rose-600' : 'text-amber-600'}`}>View</a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

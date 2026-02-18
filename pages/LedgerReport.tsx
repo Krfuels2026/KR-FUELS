@@ -20,7 +20,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     toDate: new Date().toISOString().split('T')[0],
   });
 
-  const handleOpenPicker = (ref: React.RefObject<HTMLInputElement>) => {
+  const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) {
       try {
         if ('showPicker' in HTMLInputElement.prototype) {

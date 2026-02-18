@@ -136,9 +136,11 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
         </div>
       )}
 
-      <div className="flex flex-col items-center gap-1 mb-2">
-        <h1 className="text-[18px] font-bold text-slate-900 tracking-widest uppercase">Ledger Master Registry</h1>
-        <div className="h-1 w-10 bg-brand rounded-full opacity-40" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Ledger Master Registry</h1>
+        <div className="hidden md:flex items-center gap-3">
+          {/* reserved for page actions */}
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">

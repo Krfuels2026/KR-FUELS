@@ -43,3 +43,13 @@ export interface LedgerEntry {
   balance: number;
   balanceType: 'Dr' | 'Cr';
 }
+
+export interface Reminder {
+  id: string;
+  title: string;
+  description?: string;
+  reminderDate: string; // ISO yyyy-mm-dd
+  dueDate: string; // ISO yyyy-mm-dd
+  createdAt: number;
+  createdBy?: string;
+}

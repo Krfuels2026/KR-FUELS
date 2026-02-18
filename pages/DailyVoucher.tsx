@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Account, Voucher } from '../types';
 import { formatDateToDDMMYYYY, formatCurrency } from '../utils';
@@ -25,10 +25,13 @@ interface BatchRow {
 
 interface DailyVoucherProps {
   accounts: Account[];
-  onSave: (voucher: Voucher) => void;
+  vouchers?: Voucher[];
+  onSave: (voucher: Partial<Voucher>) => void;
+  onUpdateVoucher?: (voucher: Voucher) => void;
+  onDeleteVoucher?: (id: string) => void;
 }
 
-const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
+const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], onSave, onUpdateVoucher, onDeleteVoucher }) => {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +40,9 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
     { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }
   ]);
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const prevHashRef = useRef<string>(window.location.hash);
+  const ignoreHashChangeRef = useRef(false);
 
   const openingBalance = useMemo(() => {
     return accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
@@ -53,11 +59,24 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
 
   const handleAddRow = () => {
     setRows([...rows, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
+    setIsDirty(true);
   };
 
   const handleRemoveRow = (id: string) => {
+    const isPosted = vouchers.some(v => v.id === id);
+    if (isPosted) {
+      if (onDeleteVoucher) {
+        if (!confirm('Delete this posted transaction?')) return;
+        onDeleteVoucher(id);
+      }
+      setRows(prev => prev.filter(r => r.id !== id));
+      setIsDirty(false);
+      return;
+    }
+
     if (rows.length > 1) {
       setRows(rows.filter(r => r.id !== id));
+      setIsDirty(true);
     } else {
       setRows([{ id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
     }
@@ -69,6 +88,7 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
         const updated = { ...r, [field]: value };
         if (field === 'debit' && value > 0) updated.credit = 0;
         if (field === 'credit' && value > 0) updated.debit = 0;
+        setIsDirty(true);
         return updated;
       }
       return r;
@@ -76,8 +96,12 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
   };
 
   const handleReset = () => {
-    setRows([{ id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
+    // Revert to posted vouchers for the selected date and clear unsaved entries
+    const dayVouchers = (vouchers || []).filter(v => v.date === date);
+    const mapped: BatchRow[] = dayVouchers.map(v => ({ id: v.id, accountId: v.accountId, description: v.description, debit: v.debit, credit: v.credit }));
+    setRows([...mapped, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
     setError(null);
+    setIsDirty(false);
   };
 
   const handlePost = () => {
@@ -88,23 +112,88 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
       return;
     }
     validRows.forEach(row => {
-      onSave({
-        id: Math.random().toString(36).substr(2, 9),
-        date,
-        accountId: row.accountId,
-        debit: row.debit,
-        credit: row.credit,
-        description: row.description,
-        createdAt: Date.now(),
-        bunkId: '' 
-      });
+      const isExisting = vouchers.some(v => v.id === row.id);
+      if (isExisting) {
+        const existing = vouchers.find(v => v.id === row.id)!;
+        const updated: Voucher = {
+          id: row.id,
+          date,
+          accountId: row.accountId,
+          debit: row.debit,
+          credit: row.credit,
+          description: row.description,
+          createdAt: existing.createdAt || Date.now(),
+          bunkId: existing.bunkId || ''
+        };
+        if (onUpdateVoucher) onUpdateVoucher(updated);
+        setIsDirty(false);
+      } else {
+        onSave({
+          id: Math.random().toString(36).substr(2, 9),
+          date,
+          accountId: row.accountId,
+          debit: row.debit,
+          credit: row.credit,
+          description: row.description,
+          createdAt: Date.now(),
+          bunkId: '' 
+        });
+        setIsDirty(false);
+      }
     });
     handleReset();
     alert("TRANSACTIONS POSTED SUCCESSFULLY!");
   };
 
+  // Load existing vouchers for selected date into rows so they are visible/editable
+  useEffect(() => {
+    const dayVouchers = (vouchers || []).filter(v => v.date === date);
+    const mapped: BatchRow[] = dayVouchers.map(v => ({ id: v.id, accountId: v.accountId, description: v.description, debit: v.debit, credit: v.credit }));
+    // Always leave one empty line for new entries
+    setRows([...mapped, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
+    setIsDirty(false);
+  }, [date, vouchers]);
+
+  // keep a stable ref to handlePost for hashchange listener
+  const handlePostRef = useRef(handlePost);
+  useEffect(() => { handlePostRef.current = handlePost; }, [handlePost]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      if (ignoreHashChangeRef.current) {
+        ignoreHashChangeRef.current = false;
+        prevHashRef.current = window.location.hash;
+        return;
+      }
+      const newHash = window.location.hash;
+      if (isDirty) {
+        const save = confirm('You have unsaved changes. Save before leaving? Click OK to save, Cancel to stay on this page.');
+        if (save) {
+          // save then allow navigation
+          handlePostRef.current();
+          prevHashRef.current = newHash;
+        } else {
+          // revert navigation
+          ignoreHashChangeRef.current = true;
+          window.location.hash = prevHashRef.current || '#/';
+        }
+      } else {
+        prevHashRef.current = newHash;
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [isDirty]);
+
   return (
     <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto space-y-6 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Daily Voucher</h1>
+        <div className="hidden md:flex items-center gap-3">
+          {/* controls reserved */}
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row items-end justify-between gap-4 px-1">
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest block">Transaction Date</label>
@@ -140,8 +229,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
               <tr className="bg-slate-50/80 border-b border-slate-100">
                 <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[280px]">Ledger Account</th>
                 <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest">Description</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Inflow (CR)</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Outflow (DR)</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Credit (CR)</th>
+                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Debit (DR)</th>
                 <th className="px-2 py-3 w-[44px]"></th>
               </tr>
             </thead>
@@ -245,7 +334,13 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, onSave }) => {
 
       <div className="pt-4 flex items-center justify-center gap-8 no-print">
         <button onClick={handleReset} className="flex items-center gap-2 px-6 py-2 text-[12px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-lg transition-all group"><RotateCcw size={16} className="group-hover:-rotate-90 transition-transform" /> Reset Form</button>
-        <button onClick={handlePost} className="px-8 py-3.5 bg-brand text-white rounded-xl font-bold text-[14px] uppercase tracking-widest hover:bg-brand-hover shadow-xl shadow-green-900/10 transition-all active:scale-95">Post Transactions</button>
+        <button
+          onClick={handlePost}
+          disabled={!isDirty}
+          className={`px-8 py-3.5 rounded-xl font-bold text-[14px] uppercase tracking-widest transition-all active:scale-95 ${isDirty ? 'bg-brand text-white hover:bg-brand-hover shadow-xl shadow-green-900/10' : 'bg-slate-200 text-slate-500 cursor-not-allowed'}`}
+        >
+          Post Transactions
+        </button>
       </div>
     </div>
   );

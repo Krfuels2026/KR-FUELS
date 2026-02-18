@@ -8,6 +8,7 @@ import {
   Wallet, 
   Menu, 
   PlusCircle,
+  Bell,
   MapPin,
   ChevronDown,
   ChevronLeft,
@@ -16,7 +17,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bunk, User } from '../types';
+import { Bunk, User, Reminder } from '../types';
 
 const KRLogo = ({ size = 32, collapsed = false, className = "" }: { size?: number, collapsed?: boolean, className?: string }) => {
   const lime = "#f7fee7";
@@ -65,9 +66,12 @@ interface LayoutProps {
   onBunkChange: (id: string) => void;
   onLogout: () => void;
   user: User;
+  reminders?: Reminder[];
+  onAddReminder?: (r: Partial<Reminder>) => void;
+  onDeleteReminder?: (id: string) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkChange, onLogout, user }) => {
+const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkChange, onLogout, user, reminders = [], onAddReminder, onDeleteReminder }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('kr_sidebar_collapsed');
@@ -100,7 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
 
   const menuGroups = useMemo(() => {
     const groups = [
-      { label: 'OVERVIEW', items: [{ name: 'Dashboard', icon: LayoutDashboard, path: '/' }] },
+      { label: 'OVERVIEW', items: [{ name: 'Dashboard', icon: LayoutDashboard, path: '/' }, { name: 'Reminders', icon: Bell, path: '/reminders' }] },
       { label: 'TRANSACTIONS', items: [{ name: 'Daily Voucher', icon: FileText, path: '/vouchers' }] },
       { label: 'MASTERS', items: [
         { name: 'Ledger', icon: Users, path: '/accounts' },
@@ -187,6 +191,8 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
             </div>
           ))}
         </nav>
+
+        
 
         <div className={`p-5 border-t border-slate-100 bg-slate-50/30 ${isCollapsed ? 'flex justify-center' : ''}`}>
           {!isCollapsed ? (
