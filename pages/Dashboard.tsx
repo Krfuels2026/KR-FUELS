@@ -92,10 +92,9 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <div>
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Dashboard <span className="mx-2 text-slate-300 font-normal">/</span> {locationName}</h1>
-        </div>
-        
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">
+          Dashboard <span className="mx-2 text-slate-300 font-normal">/</span> {locationName}
+        </h1>
         <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           <button onClick={() => navigateDay('prev')} className="p-3 hover:bg-slate-50 text-slate-500 border-r border-slate-100 transition-colors"><ChevronLeft size={18} strokeWidth={2.5} /></button>
           <div className="flex items-center gap-3 py-2 px-6 cursor-pointer group hover:bg-slate-50/50" onClick={() => dateInputRef.current?.showPicker()}>
@@ -124,15 +123,15 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 bg-slate-50/30">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 bg-slate-50/30 flex-shrink-0">
             <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shadow-sm"><Clock size={18} /></div>
             <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Recent Activity</h2>
           </div>
-          <div className="overflow-x-auto flex-1">
+          <div className="overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
             <table className="w-full text-left">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr className="bg-slate-50/80">
                   <th className="px-8 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-widest">Account Details</th>
                   <th className="px-8 py-4 text-[11px] font-bold text-slate-600 uppercase tracking-widest text-right">Transaction</th>
@@ -158,52 +157,75 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6 min-h-[500px]">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="w-9 h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={18} /></div>
-            <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Reminders</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-               <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><Zap size={18} /></div>
-               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Active Reminders</p><p className="text-xl font-black text-slate-900 tabular-nums leading-none">{(reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).length}</p></div>
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[500px] h-[500px]">
+          {/* Header with stats inline */}
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={18} /></div>
+              <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Reminders</h2>
             </div>
-            <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-               <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 shadow-sm"><BarChart3 size={18} /></div>
-               <div><p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest opacity-80 mb-1">Due Today</p><p className="text-xl font-black text-slate-900 font-mono tracking-tighter leading-none">{(reminders || []).filter(r => r.dueDate === selectedDate).length}</p></div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
+                <Zap size={13} className="text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active</span>
+                <span className="text-[13px] font-black text-slate-800 tabular-nums ml-1">{(reminders || []).filter(r => r.reminderDate <= selectedDate && r.dueDate >= selectedDate).length}</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
+                <BarChart3 size={13} className="text-rose-400" />
+                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Due Today</span>
+                <span className="text-[13px] font-black text-rose-700 tabular-nums ml-1">{(reminders || []).filter(r => r.dueDate === selectedDate).length}</span>
+              </div>
             </div>
           </div>
-          <div className="pt-2">
-            <div className="space-y-3">
-              { (reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).length === 0 && (
-                <p className="text-[11px] text-slate-400 uppercase tracking-wider">No reminders for this date</p>
-              )}
-              { (reminders || []).filter(r => (r.reminderDate <= selectedDate && r.dueDate >= selectedDate)).map(r => {
+          {/* Scrollable list */}
+          <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+            {(() => {
+              const active = (reminders || []).filter(r => r.reminderDate <= selectedDate && r.dueDate >= selectedDate);
+              // Sort: due today first, then urgent (< 24h), then others; within each group by dueDate asc
+              const sorted = [...active].sort((a, b) => {
+                const aDueToday = a.dueDate === selectedDate ? 0 : 1;
+                const bDueToday = b.dueDate === selectedDate ? 0 : 1;
+                if (aDueToday !== bDueToday) return aDueToday - bDueToday;
+                const aUrgent = isUrgent(a) ? 0 : 1;
+                const bUrgent = isUrgent(b) ? 0 : 1;
+                if (aUrgent !== bUrgent) return aUrgent - bUrgent;
+                return a.dueDate.localeCompare(b.dueDate);
+              });
+              if (sorted.length === 0) return (
+                <p className="text-[11px] text-slate-400 uppercase tracking-wider text-center pt-16">No reminders for this date</p>
+              );
+              return sorted.map(r => {
+                const dueToday = r.dueDate === selectedDate;
                 const urgent = isUrgent(r);
+                const colorClass = dueToday
+                  ? 'bg-rose-50/90 border-rose-500'
+                  : urgent
+                  ? 'bg-orange-50/80 border-orange-400'
+                  : 'bg-amber-50/80 border-amber-400';
+                const iconClass = dueToday ? 'bg-rose-500 text-white' : urgent ? 'bg-orange-400 text-white' : 'bg-amber-400 text-white';
+                const badge = dueToday ? 'DUE TODAY' : urgent ? 'URGENT' : 'ACTIVE';
+                const badgeClass = dueToday ? 'bg-rose-500 text-white' : urgent ? 'bg-orange-400 text-white' : 'bg-amber-400 text-white';
+                const textMain = dueToday ? 'text-rose-900' : urgent ? 'text-orange-900' : 'text-amber-900';
+                const textSub = dueToday ? 'text-rose-700' : urgent ? 'text-orange-700' : 'text-amber-700';
+                const textDue = dueToday ? 'text-rose-600' : urgent ? 'text-orange-600' : 'text-amber-600';
                 return (
-                  <div key={r.id} className={`p-4 border-l-4 rounded-lg flex items-start justify-between transition-all hover:shadow-md ${urgent ? 'bg-rose-50/80 border-rose-500' : 'bg-amber-50/80 border-amber-500'}`}>
+                  <div key={r.id} className={`p-4 border-l-4 rounded-xl flex items-start justify-between transition-all hover:shadow-md ${colorClass}`}>
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${urgent ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
-                        <Clock size={16} />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${iconClass}`}>
+                        <Clock size={15} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${urgent ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
-                            {urgent ? 'URGENT' : 'WARNING'}
-                          </span>
-                        </div>
-                        <p className={`font-bold uppercase text-[12px] ${urgent ? 'text-rose-900' : 'text-amber-900'}`}>{r.title}</p>
-                        <p className={`text-[11px] mt-1 ${urgent ? 'text-rose-700' : 'text-amber-700'}`}>{r.description}</p>
-                        <p className={`text-[10px] mt-1.5 uppercase tracking-wider font-bold ${urgent ? 'text-rose-600' : 'text-amber-600'}`}>Due: {r.dueDate}</p>
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${badgeClass}`}>{badge}</span>
+                        <p className={`font-bold uppercase text-[12px] mt-1.5 ${textMain}`}>{r.title}</p>
+                        <p className={`text-[11px] mt-0.5 ${textSub}`}>{r.description}</p>
+                        <p className={`text-[10px] mt-1 uppercase tracking-wider font-bold ${textDue}`}>Due: {formatDateToDDMMYYYY(r.dueDate)}</p>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <a href="#/reminders" className={`text-[12px] font-bold hover:underline ${urgent ? 'text-rose-600' : 'text-amber-600'}`}>View</a>
-                    </div>
+                    <a href="#/reminders" className={`text-[11px] font-bold hover:underline flex-shrink-0 ml-2 mt-0.5 ${textDue}`}>View</a>
                   </div>
                 );
-              })}
-            </div>
+              });
+            })()}
           </div>
         </div>
       </div>

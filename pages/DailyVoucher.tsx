@@ -55,7 +55,11 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
     }), { debit: 0, credit: 0 });
   }, [rows]);
 
-  const closingBalance = openingBalance + totals.debit - totals.credit;
+  // Tally standard: Cash is an asset (DR balance).
+  // CR column entries = contra account credited → Cash DEBITED → cash IN (inflow)
+  // DR column entries = contra account debited  → Cash CREDITED → cash OUT (outflow)
+  // Closing = Opening + CR(inflows) − DR(outflows)
+  const closingBalance = openingBalance + totals.credit - totals.debit;
 
   const handleAddRow = () => {
     setRows([...rows, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
@@ -186,7 +190,7 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   }, [isDirty]);
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto space-y-6 pb-20">
+    <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto flex flex-col gap-6 h-full min-h-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
         <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Daily Voucher</h1>
         <div className="hidden md:flex items-center gap-3">
@@ -194,10 +198,11 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row items-end justify-between gap-4 px-1">
-        <div className="space-y-1.5">
+      <div className="flex flex-col md:flex-row items-stretch gap-4">
+        {/* Date Picker */}
+        <div className="flex flex-col justify-center space-y-1.5 flex-shrink-0">
           <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest block">Transaction Date</label>
-          <div 
+          <div
             className="flex items-center gap-2.5 cursor-pointer bg-white border border-slate-200 px-4 py-2 rounded-lg hover:border-brand transition-all shadow-sm group"
             onClick={() => dateInputRef.current?.showPicker()}
           >
@@ -207,11 +212,29 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
           </div>
         </div>
 
-        <div className="text-right">
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">Opening Cash Balance</p>
-          <div className="flex items-baseline justify-end gap-1.5">
-            <span className="text-2xl font-bold text-slate-900 font-mono tracking-tighter leading-none tabular-nums">{formatCurrency(Math.abs(openingBalance))}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-0.5">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-slate-400">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Opening Balance</p>
+            <p className="text-[15px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
+              {formatCurrency(Math.abs(openingBalance))}
+              <span className="text-[9px] ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
+            </p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-emerald-500">
+            <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowUpCircle size={10} /> Total Inflows (CR)</p>
+            <p className="text-[15px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">{formatCurrency(totals.credit)}</p>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-rose-500">
+            <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowDownCircle size={10} /> Total Outflows (DR)</p>
+            <p className="text-[15px] font-black text-rose-600 font-mono tabular-nums tracking-tighter leading-none">{formatCurrency(totals.debit)}</p>
+          </div>
+          <div className={`bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 ${closingBalance >= 0 ? 'border-l-brand' : 'border-l-rose-500'}`}>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Calculator size={10} /> Closing Balance</p>
+            <p className={`text-[15px] font-black font-mono tabular-nums tracking-tighter leading-none ${closingBalance >= 0 ? 'text-brand' : 'text-rose-600'}`}>
+              {formatCurrency(Math.abs(closingBalance))}
+              <span className="text-[9px] ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
+            </p>
           </div>
         </div>
       </div>
@@ -222,10 +245,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-auto flex-1 min-h-0 custom-scrollbar">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr className="bg-slate-50/80 border-b border-slate-100">
                 <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[280px]">Ledger Account</th>
                 <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest">Description</th>
@@ -288,51 +311,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
           </table>
         </div>
 
-        <div className="bg-slate-50/50 border-t border-slate-100 p-6">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Widget: Day Activity Totals */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                <div className="flex justify-between items-center text-slate-600 font-bold text-[8px] uppercase tracking-[0.2em] border-b border-slate-100 pb-1.5">
-                  <span>Day Activity Totals</span>
-                </div>
-                <div className="flex justify-between items-end">
-                  <div className="space-y-1">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                      <ArrowUpCircle size={10} className="text-brand" /> Total Inflows (CR)
-                    </p>
-                    <p className="text-xl font-bold text-brand font-mono tabular-nums tracking-tighter">
-                      {formatCurrency(totals.credit)}
-                    </p>
-                  </div>
-                  <div className="space-y-1 text-right">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 justify-end">
-                      Total Outflows (DR) <ArrowDownCircle size={10} className="text-rose-500" />
-                    </p>
-                    <p className="text-xl font-bold text-rose-600 font-mono tabular-nums tracking-tighter">
-                      {formatCurrency(totals.debit)}
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              {/* Right Widget: Estimated Closing Balance */}
-              <div className="bg-white p-5 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
-                <div>
-                  <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mb-2 opacity-80">Estimated Closing Balance</p>
-                  <p className="text-2xl font-bold text-[#0f172a] font-mono leading-none tabular-nums tracking-tighter">
-                    {formatCurrency(Math.abs(closingBalance))}
-                    <span className="text-[10px] ml-1.5 opacity-40 font-bold">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
-                  </p>
-                </div>
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${closingBalance >= 0 ? 'bg-green-50 text-brand' : 'bg-rose-50 text-rose-500'}`}>
-                  <Calculator size={24} />
-                </div>
-              </div>
-           </div>
-        </div>
       </div>
 
-      <div className="pt-4 flex items-center justify-center gap-8 no-print">
+      <div className="pt-2 pb-4 flex items-center justify-center gap-8 no-print flex-shrink-0">
         <button onClick={handleReset} className="flex items-center gap-2 px-6 py-2 text-[12px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-lg transition-all group"><RotateCcw size={16} className="group-hover:-rotate-90 transition-transform" /> Reset Form</button>
         <button
           onClick={handlePost}

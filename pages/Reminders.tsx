@@ -60,9 +60,7 @@ const Reminders: React.FC<RemindersProps> = ({ reminders = [], onAddReminder, on
   return (
     <div className="space-y-4 animate-in fade-in duration-500 max-w-5xl mx-auto pb-10">
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <div>
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Reminders Registry</h1>
-        </div>
+        <h1 className="text-[15px] font-bold text-slate-900 uppercase tracking-tight">Reminders Registry</h1>
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setOpen(true)} 

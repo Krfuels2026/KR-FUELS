@@ -104,7 +104,7 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
 
   const menuGroups = useMemo(() => {
     const groups = [
-      { label: 'OVERVIEW', items: [{ name: 'Dashboard', icon: LayoutDashboard, path: '/' }, { name: 'Reminders', icon: Bell, path: '/reminders' }] },
+      { label: 'OVERVIEW', items: [{ name: 'Dashboard', icon: LayoutDashboard, path: '/' }] },
       { label: 'TRANSACTIONS', items: [{ name: 'Daily Voucher', icon: FileText, path: '/vouchers' }] },
       { label: 'MASTERS', items: [
         { name: 'Ledger', icon: Users, path: '/accounts' },
@@ -113,7 +113,8 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
       { label: 'REPORTS', items: [
         { name: 'Ledger Report', icon: BookOpen, path: '/ledger' },
         { name: 'Cash Report', icon: Wallet, path: '/cash-report' }
-      ]}
+      ]},
+      { label: 'REMINDERS', items: [{ name: 'Reminders', icon: Bell, path: '/reminders' }] }
     ];
 
     if (user.role === 'super_admin') {
