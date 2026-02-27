@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Lock, Mail, LogIn, AlertCircle, Fuel, BarChart3, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
-import api, { setToken } from '../api';
+import { useLogin } from '../convex-api';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -25,16 +25,31 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const login = useLogin();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
     try {
-      const res = await api.login(username, password);
-      setToken(res.accessToken);
-      onLogin(res.user as User);
+      // Call Convex login action
+      const userData = await login({ username, password });
+      
+      // Store user data in localStorage
+      localStorage.setItem('kr_fuels_token', userData.token);
+      localStorage.setItem('kr_fuels_user_id', userData.id);
+      
+      // Convert Convex user data to app User type
+      const user: User = {
+        username: userData.username,
+        name: userData.name,
+        role: userData.role,
+        accessibleBunkIds: userData.accessibleBunkIds,
+      };
+      
+      onLogin(user);
     } catch (err: any) {
-      setError(err?.message || 'Login failed');
+      setError(err?.message || 'Invalid username or password');
     } finally {
       setIsLoading(false);
     }

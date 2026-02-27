@@ -9,16 +9,22 @@ import LedgerReport from './pages/LedgerReport';
 import CashReport from './pages/CashReport';
 import Dashboard from './pages/Dashboard';
 import Reminders from './pages/Reminders';
+import RemindersConvex from './pages/RemindersConvex'; // PoC: Uses Convex
 import Login from './pages/Login';
 import Administration from './pages/Administration';
 import { Account, Voucher, Bunk, User, Reminder } from './types';
 import api, { setToken, getToken } from './api';
+import { useQuery } from 'convex/react';
+import { api as convexApi } from '../../convex/_generated/api';
 
 // Frontend no longer seeds data locally — load via API
 
 const isUuid = (v?: string) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
 
 const App: React.FC = () => {
+  // Load bunks from Convex
+  const convexBunks = useQuery(convexApi.queries.bunks.getAllBunks);
+  
   const [bunks, setBunks] = useState<Bunk[]>(() => {
     return [];
   });
@@ -72,35 +78,27 @@ const App: React.FC = () => {
     localStorage.setItem('kr_fuels_reminders', JSON.stringify(reminders));
   }, [reminders]);
 
+  // Convert Convex bunks to frontend format
+  useEffect(() => {
+    if (convexBunks) {
+      const formattedBunks: Bunk[] = convexBunks.map((b: any) => ({
+        id: b._id,
+        name: b.name,
+        code: b.code,
+        location: b.location,
+      }));
+      setBunks(formattedBunks);
+    }
+  }, [convexBunks]);
+
   // Load initial data from API when authenticated
   useEffect(() => {
     const t = getToken();
     if (!t) return;
 
-    (async () => {
-      try {
-        const [bunksRes, accountsRes, vouchersRes, remindersRes, profile] = await Promise.all([
-          api.getBunks().catch(() => []),
-          api.getAccounts().catch(() => []),
-          api.getVouchers().catch(() => []),
-          api.getReminders().catch(() => []),
-          api.getProfile().catch(() => null),
-        ]);
-
-        if (bunksRes) setBunks(bunksRes as Bunk[]);
-        if (accountsRes) setAccounts(accountsRes as Account[]);
-        if (vouchersRes) setVouchers(vouchersRes as Voucher[]);
-        if (remindersRes) setReminders(remindersRes as Reminder[]);
-        if (profile) setCurrentUser(profile as User);
-
-        // set a default current bunk
-        if ((bunksRes as Bunk[])?.length > 0 && !currentBunkId) {
-          setCurrentBunkId((bunksRes as Bunk[])[0].id);
-        }
-      } catch (err) {
-        console.error('Failed to load API data', err);
-      }
-    })();
+    // Skip NestJS API calls for now since we migrated to Convex
+    // Only load accounts and vouchers if NestJS is still running
+    console.log('Skipping NestJS API calls - using Convex for bunks and auth');
   }, []);
 
   const bunkAccounts = useMemo(() => accounts.filter(a => a.bunkId === currentBunkId), [accounts, currentBunkId]);
@@ -246,7 +244,7 @@ const App: React.FC = () => {
                 vouchers={bunkVouchers} 
                 locationName={currentBunk.location} 
                 onDeleteVoucher={deleteVoucher}
-                reminders={reminders}
+                reminders={[]} // PoC: Reminders now use Convex, Dashboard shows none for now
               />
             } 
           />
@@ -256,7 +254,7 @@ const App: React.FC = () => {
           <Route path="/vouchers" element={<DailyVoucher accounts={bunkAccounts} vouchers={bunkVouchers} onSave={addVoucher} onUpdateVoucher={updateVoucher} onDeleteVoucher={deleteVoucher} />} />
           <Route path="/ledger" element={<LedgerReport accounts={bunkAccounts} vouchers={bunkVouchers} />} />
           <Route path="/cash-report" element={<CashReport accounts={bunkAccounts} vouchers={bunkVouchers} onDeleteVoucher={deleteVoucher} />} />
-          <Route path="/reminders" element={<Reminders reminders={reminders} onAddReminder={addReminder} onDeleteReminder={deleteReminder} onUpdateReminder={updateReminder} />} />
+          <Route path="/reminders" element={<RemindersConvex />} />
           {currentUser.role === 'super_admin' && (
             <Route path="/administration" element={<Administration bunks={bunks} users={users} setBunks={setBunks} setUsers={setUsers} />} />
           )}
