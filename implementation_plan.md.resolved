@@ -1,0 +1,228 @@
+# NestJS + TypeORM Backend Monorepo — Implementation Plan
+
+Build a **NestJS backend** with **TypeORM** (PostgreSQL) inside a monorepo alongside the existing React/Vite frontend.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Database connection**: You'll need a PostgreSQL instance running locally or remotely. The plan assumes `localhost:5432` with a database called `kr_fuels`. Please confirm or provide your connection details.
+
+> [!IMPORTANT]
+> **Moving frontend files**: The existing root-level frontend code will be moved into `apps/frontend/`. Git history is preserved since it's a move, not a delete. Is this acceptable?
+
+---
+
+## Proposed Monorepo Structure
+
+```
+KR-FUELS/
+├── apps/
+│   ├── frontend/                   ← existing React code (moved here)
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── types.ts
+│   │   ├── utils.ts
+│   │   ├── index.html
+│   │   ├── index.tsx
+│   │   ├── vite.config.ts
+│   │   ├── tsconfig.json
+│   │   └── package.json
+│   │
+│   └── backend/                    ← NEW NestJS app
+│       ├── src/
+│       │   ├── main.ts
+│       │   ├── app.module.ts
+│       │   ├── config/
+│       │   │   └── database.config.ts
+│       │   ├── auth/
+│       │   │   ├── auth.module.ts
+│       │   │   ├── auth.controller.ts
+│       │   │   ├── auth.service.ts
+│       │   │   ├── jwt.strategy.ts
+│       │   │   ├── jwt-auth.guard.ts
+│       │   │   └── roles.guard.ts
+│       │   ├── bunks/
+│       │   │   ├── bunks.module.ts
+│       │   │   ├── bunks.controller.ts
+│       │   │   ├── bunks.service.ts
+│       │   │   └── entities/
+│       │   │       └── bunk.entity.ts
+│       │   ├── users/
+│       │   │   ├── users.module.ts
+│       │   │   ├── users.controller.ts
+│       │   │   ├── users.service.ts
+│       │   │   └── entities/
+│       │   │       └── user.entity.ts
+│       │   ├── accounts/
+│       │   │   ├── accounts.module.ts
+│       │   │   ├── accounts.controller.ts
+│       │   │   ├── accounts.service.ts
+│       │   │   └── entities/
+│       │   │       └── account.entity.ts
+│       │   ├── vouchers/
+│       │   │   ├── vouchers.module.ts
+│       │   │   ├── vouchers.controller.ts
+│       │   │   ├── vouchers.service.ts
+│       │   │   └── entities/
+│       │   │       └── voucher.entity.ts
+│       │   └── reminders/
+│       │       ├── reminders.module.ts
+│       │       ├── reminders.controller.ts
+│       │       ├── reminders.service.ts
+│       │       └── entities/
+│       │           └── reminder.entity.ts
+│       ├── .env
+│       ├── nest-cli.json
+│       ├── tsconfig.json
+│       └── package.json
+│
+├── package.json                    ← root workspace config
+├── .gitignore
+└── README.md
+```
+
+---
+
+## Proposed Changes
+
+### Monorepo Root Setup
+
+#### [NEW] [package.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/package.json)
+Overwrite root [package.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/package.json) with npm workspaces config pointing to `apps/*`.
+
+#### [MODIFY] [.gitignore](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/.gitignore)
+Add backend-specific ignores (`.env`, `dist/`).
+
+---
+
+### Frontend Migration
+
+Move all current frontend source files into `apps/frontend/`:
+- [App.tsx](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/App.tsx), [index.tsx](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/index.tsx), [index.html](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/index.html), [types.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts), [utils.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/utils.ts)
+- `components/`, `pages/`
+- [vite.config.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/vite.config.ts), [tsconfig.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/tsconfig.json), [package.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/package.json)
+
+The frontend [package.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/package.json) keeps its existing dependencies unchanged. Vite dev server still runs on port `5173`.
+
+---
+
+### NestJS Backend — `apps/backend/`
+
+#### [NEW] [package.json](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/apps/backend/package.json)
+NestJS dependencies:
+- `@nestjs/core`, `@nestjs/common`, `@nestjs/platform-express`
+- `@nestjs/typeorm`, `typeorm`, `pg`
+- `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`
+- `@nestjs/config`, `class-validator`, `class-transformer`
+
+#### [NEW] [main.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/apps/backend/src/main.ts)
+Bootstrap NestJS on port `3000` with global validation pipe, CORS enabled for frontend origin.
+
+#### [NEW] [app.module.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/apps/backend/src/app.module.ts)
+Root module importing `TypeOrmModule.forRootAsync()`, `ConfigModule`, and all feature modules.
+
+#### [NEW] [database.config.ts](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/apps/backend/src/config/database.config.ts)
+TypeORM config reading from `.env`: host, port, username, password, database. `synchronize: true` for development.
+
+---
+
+### TypeORM Entities
+
+Maps directly to the [database_schema.md](file:///C:/Users/Srivarmaa/.gemini/antigravity/brain/1b55b29f-b5cc-43b9-8673-40c1da4cbfe0/database_schema.md) we already designed.
+
+| Entity | Key Relations |
+|---|---|
+| [Bunk](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts#2-8) | `OneToMany → Account`, `OneToMany → Voucher`, `ManyToMany → User` |
+| [User](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts#9-16) | `ManyToMany → Bunk` (via join table), role enum |
+| [Account](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts#17-26) | `ManyToOne → self` (parent), `ManyToOne → Bunk`, `OneToMany → Voucher` |
+| [Voucher](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts#27-37) | `ManyToOne → Account`, `ManyToOne → Bunk` |
+| [Reminder](file:///c:/Users/Srivarmaa/Desktop/HK/KR-FUELS/types.ts#47-56) | `createdBy` → username string (loose relation) |
+
+---
+
+### API Modules & Endpoints
+
+#### Auth Module
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/auth/login` | Login with username + password → JWT token |
+| `GET` | `/auth/profile` | Get current user (from JWT) |
+
+- JWT strategy with `@nestjs/passport`
+- `RolesGuard` decorator: `@Roles('super_admin')` for admin-only routes
+- Passwords hashed with **bcrypt**
+
+#### Bunks Module
+| Method | Endpoint | Auth |
+|---|---|---|
+| `GET` | `/bunks` | All users (filtered by access) |
+| `POST` | `/bunks` | `super_admin` only |
+| `DELETE` | `/bunks/:id` | `super_admin` only |
+
+#### Users Module
+| Method | Endpoint | Auth |
+|---|---|---|
+| `GET` | `/users` | `super_admin` only |
+| `POST` | `/users` | `super_admin` only |
+| `DELETE` | `/users/:id` | `super_admin` only |
+| `PUT` | `/users/:id/bunk-access` | `super_admin` only |
+
+#### Accounts Module
+| Method | Endpoint | Auth |
+|---|---|---|
+| `GET` | `/accounts?bunkId=` | Filtered by bunk access |
+| `POST` | `/accounts` | Any authenticated user |
+| `PUT` | `/accounts/:id` | Any authenticated user |
+| `DELETE` | `/accounts/:id` | Any (with child-check) |
+
+#### Vouchers Module
+| Method | Endpoint | Auth |
+|---|---|---|
+| `GET` | `/vouchers?bunkId=&date=` | Filtered by bunk + date |
+| `POST` | `/vouchers` | Any authenticated user |
+| `PUT` | `/vouchers/:id` | Any authenticated user |
+| `DELETE` | `/vouchers/:id` | Any authenticated user |
+
+#### Reminders Module
+| Method | Endpoint | Auth |
+|---|---|---|
+| `GET` | `/reminders` | Any authenticated user |
+| `POST` | `/reminders` | Any authenticated user |
+| `PUT` | `/reminders/:id` | Any authenticated user |
+| `DELETE` | `/reminders/:id` | Any authenticated user |
+
+---
+
+## Verification Plan
+
+### Automated — Backend Compilation
+```bash
+cd apps/backend
+npm run build
+```
+Must compile with zero errors.
+
+### Automated — NestJS Start
+```bash
+cd apps/backend
+npm run start:dev
+```
+Server must start on port `3000` without crashes.
+
+### Manual — API Testing
+You can test the following endpoints manually using a browser or Postman:
+
+1. **Login**: `POST http://localhost:3000/auth/login` with `{"username":"admin","password":"password123"}` → should return a JWT token
+2. **Get Bunks**: `GET http://localhost:3000/bunks` with `Authorization: Bearer <token>` → should return the list of fuel stations
+3. **Create Account**: `POST http://localhost:3000/accounts` with account data → should persist to the database
+4. **Get Vouchers**: `GET http://localhost:3000/vouchers?bunkId=<id>&date=2025-02-25` → should return vouchers for that bunk/date
+
+### Manual — Frontend Still Works
+```bash
+cd apps/frontend
+npm run dev
+```
+Frontend should still run on `http://localhost:5173` without issues.
