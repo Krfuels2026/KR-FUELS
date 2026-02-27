@@ -25,25 +25,25 @@ export class Account {
     @Column({ type: 'uuid', name: 'parent_id', nullable: true })
     parentId: string | null;
 
-    @ApiProperty({ example: 15000.0 })
+    @ApiProperty({ example: 15000 })
     @Column({
         type: 'numeric',
         precision: 15,
         scale: 2,
         default: 0,
         name: 'opening_debit',
-        transformer: { to: (v: number) => v, from: (v: string) => parseFloat(v) },
+        transformer: { to: (v: number) => v, from: (v: string) => Number.parseFloat(v) },
     })
     openingDebit: number;
 
-    @ApiProperty({ example: 0.0 })
+    @ApiProperty({ example: 0 })
     @Column({
         type: 'numeric',
         precision: 15,
         scale: 2,
         default: 0,
         name: 'opening_credit',
-        transformer: { to: (v: number) => v, from: (v: string) => parseFloat(v) },
+        transformer: { to: (v: number) => v, from: (v: string) => Number.parseFloat(v) },
     })
     openingCredit: number;
 

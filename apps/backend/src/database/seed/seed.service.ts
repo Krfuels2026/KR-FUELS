@@ -19,8 +19,14 @@ export class SeedService implements OnModuleInit {
     ) { }
 
     async onModuleInit() {
-        await this.seedBunks();
-        await this.seedUsers();
+        // Only run seeding when explicitly enabled via environment variable
+        // Set ENABLE_DB_SEED=true to enable automatic seeding on startup
+        if (process.env.ENABLE_DB_SEED === 'true') {
+            await this.seedBunks();
+            await this.seedUsers();
+        } else {
+            this.logger.log('DB seeding skipped (ENABLE_DB_SEED != true)');
+        }
     }
 
     private async seedBunks() {

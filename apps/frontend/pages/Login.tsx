@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Lock, Mail, LogIn, AlertCircle, Fuel, BarChart3, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
+import api, { setToken } from '../api';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -24,28 +25,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
-    setTimeout(() => {
-      const savedUsers = JSON.parse(localStorage.getItem('kr_fuels_users_db') || '[]');
-      const defaultUsers: User[] = [
-        { username: 'superadmin', password: 'password123', role: 'super_admin', name: 'Super Admin' },
-        { username: 'admin', password: 'password123', role: 'admin', name: 'Branch Admin', accessibleBunkIds: ['bunk_1'] }
-      ];
-
-      const allUsers = [...defaultUsers, ...savedUsers];
-      const foundUser = allUsers.find(u => u.username === username && (u.password === password || u.password === 'password123'));
-
-      if (foundUser) {
-        onLogin(foundUser);
-      } else {
-        setError('Invalid credentials. Please check your username and password.');
-        setIsLoading(false);
-      }
-    }, 800);
+    try {
+      const res = await api.login(username, password);
+      setToken(res.accessToken);
+      onLogin(res.user as User);
+    } catch (err: any) {
+      setError(err?.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

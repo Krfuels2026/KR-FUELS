@@ -7,9 +7,9 @@ import {
     ManyToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Account } from '../../modules/accounts/entities/account.entity';
-import { Voucher } from '../../modules/vouchers/entities/voucher.entity';
-import { User } from '../../modules/users/entities/user.entity';
+import { Account } from '../../accounts/entities/account.entity';
+import { Voucher } from '../../vouchers/entities/voucher.entity';
+import { User } from '../../users/entities/user.entity';
 
 @Entity('bunks')
 export class Bunk {

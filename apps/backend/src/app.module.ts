@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AppController } from './app.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { BunksModule } from './modules/bunks/bunks.module';
@@ -10,6 +11,7 @@ import { RemindersModule } from './modules/reminders/reminders.module';
 import { SeedModule } from './database/seed/seed.module';
 
 @Module({
+    controllers: [AppController],
     imports: [
         // ─── Environment Configuration ─────────────────
         ConfigModule.forRoot({
