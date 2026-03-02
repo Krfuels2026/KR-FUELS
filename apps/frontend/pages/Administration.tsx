@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
-import { Bunk, User } from '../types';
+import { useQuery, useMutation, useAction } from 'convex/react';
+import { api as convexApi } from '../../../convex/_generated/api';
 import { 
   Building2, 
   Users, 
@@ -15,70 +16,85 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-interface AdministrationProps {
-  bunks: Bunk[];
-  users: User[];
-  setBunks: (bunks: Bunk[]) => void;
-  setUsers: (users: User[]) => void;
-}
-
-const Administration: React.FC<AdministrationProps> = ({ bunks, users, setBunks, setUsers }) => {
+const Administration: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'bunks' | 'users'>('bunks');
   const [isAddingBunk, setIsAddingBunk] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
 
-  const [newBunk, setNewBunk] = useState<Partial<Bunk>>({ name: '', code: '', location: '' });
-  const [newUser, setNewUser] = useState<Partial<User>>({ 
-    username: '', 
-    password: '', 
-    name: '', 
-    role: 'admin', 
-    accessibleBunkIds: [] 
+  const [newBunk, setNewBunk] = useState({ name: '', code: '', location: '' });
+  const [newUser, setNewUser] = useState({ 
+    username: '', password: '', name: '', 
+    role: 'admin' as 'admin' | 'super_admin', 
+    accessibleBunkIds: [] as string[]
   });
 
-  const handleAddBunk = (e: React.FormEvent) => {
+  // ── Convex data ────────────────────────────────────────────────────
+  const convexUsers = useQuery(convexApi.queries.users.getAllUsers);
+  const allUserBunkAccess = useQuery(convexApi.queries.users.getAllUserBunkAccess);
+  const convexBunksRaw = useQuery(convexApi.queries.bunks.getAllBunks);
+  const bunks = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
+
+  // ── Convex mutations / actions ──────────────────────────────────────
+  const createBunk = useMutation(convexApi.mutations.bunks.createBunk);
+  const deleteBunk = useMutation(convexApi.mutations.bunks.deleteBunk);
+  const registerUser = useAction((convexApi.actions.auth as any).registerUser);
+  const deleteUser = useMutation(convexApi.mutations.users.deleteUser);
+
+  // ── Handlers ───────────────────────────────────────────────────────
+  const handleAddBunk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBunk.name || !newBunk.code) return;
-    const bunkToAdd: Bunk = {
-      id: `bunk_${Date.now()}`,
-      name: newBunk.name.toUpperCase(),
-      code: newBunk.code.toUpperCase(),
-      location: (newBunk.location || '').toUpperCase()
-    };
-    setBunks([...bunks, bunkToAdd]);
-    setNewBunk({ name: '', code: '', location: '' });
-    setIsAddingBunk(false);
-  };
-
-  const handleAddUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUser.username || !newUser.name) return;
-    const userToAdd: User = {
-      username: newUser.username.toLowerCase(),
-      password: newUser.password || 'password123',
-      name: newUser.name,
-      role: newUser.role as 'admin' | 'super_admin',
-      accessibleBunkIds: newUser.role === 'super_admin' ? [] : newUser.accessibleBunkIds
-    };
-    setUsers([...users, userToAdd]);
-    setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] });
-    setIsAddingUser(false);
-  };
-
-  const handleDeleteBunk = (id: string) => {
-    if (confirm("Are you sure? Deleting a bunk will restrict access to its data.")) {
-      setBunks(bunks.filter(b => b.id !== id));
+    try {
+      await createBunk({
+        name: newBunk.name.toUpperCase(),
+        code: newBunk.code.toUpperCase(),
+        location: (newBunk.location || '').toUpperCase(),
+      });
+      setNewBunk({ name: '', code: '', location: '' });
+      setIsAddingBunk(false);
+    } catch (err: any) {
+      alert('Failed to add bunk: ' + (err.message || err));
     }
   };
 
-  const handleDeleteUser = (username: string) => {
-    if (confirm(`Remove user "${username}"?`)) {
-      setUsers(users.filter(u => u.username !== username));
+  const handleDeleteBunk = async (id: string) => {
+    if (!confirm("Are you sure? Deleting a bunk will restrict access to its data.")) return;
+    try {
+      await deleteBunk({ id: id as any });
+    } catch (err: any) {
+      alert('Failed to delete bunk: ' + (err.message || err));
+    }
+  };
+
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUser.username || !newUser.name || !newUser.password) return;
+    try {
+      await registerUser({
+        username: newUser.username.toLowerCase(),
+        password: newUser.password,
+        name: newUser.name,
+        role: newUser.role,
+        accessibleBunkIds: newUser.accessibleBunkIds as any,
+      });
+      setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] });
+      setIsAddingUser(false);
+    } catch (err: any) {
+      alert('Failed to create user: ' + (err.message || err));
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm(`Remove this user?`)) return;
+    try {
+      await deleteUser({ userId: userId as any });
+    } catch (err: any) {
+      alert('Failed to delete user: ' + (err.message || err));
     }
   };
 
   const toggleBunkForUser = (bunkId: string) => {
-    const current = newUser.accessibleBunkIds || [];
+    const current = newUser.accessibleBunkIds;
     if (current.includes(bunkId)) {
       setNewUser({ ...newUser, accessibleBunkIds: current.filter(id => id !== bunkId) });
     } else {
@@ -86,12 +102,15 @@ const Administration: React.FC<AdministrationProps> = ({ bunks, users, setBunks,
     }
   };
 
-  const getUserBunkNames = (user: User) => {
-    if (user.role === 'super_admin') return 'Global Access';
-    if (!user.accessibleBunkIds || user.accessibleBunkIds.length === 0) return 'No Bunks Assigned';
-    
-    return user.accessibleBunkIds
-      .map(id => bunks.find(b => b.id === id)?.name)
+  const getUserBunkNames = (userId: string, role: string) => {
+    if (role === 'super_admin') return 'Global Access';
+    if (!allUserBunkAccess) return '...';
+    const accessIds = allUserBunkAccess
+      .filter((a: any) => a.userId === userId)
+      .map((a: any) => a.bunkId);
+    if (accessIds.length === 0) return 'No Bunks Assigned';
+    return accessIds
+      .map((id: string) => bunks.find(b => b.id === id)?.name)
       .filter(Boolean)
       .join(', ');
   };
@@ -179,7 +198,7 @@ const Administration: React.FC<AdministrationProps> = ({ bunks, users, setBunks,
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((user) => (
+                {(convexUsers || []).map((user: any) => (
                   <tr key={user.username} className="hover:bg-slate-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -216,13 +235,13 @@ const Administration: React.FC<AdministrationProps> = ({ bunks, users, setBunks,
                           </span>
                         ) : (
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight leading-relaxed">
-                            {getUserBunkNames(user)}
+                            {getUserBunkNames(user._id, user.role)}
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => handleDeleteUser(user.username)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
+                      <button onClick={() => handleDeleteUser(user._id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
                         <Trash2 size={16} />
                       </button>
                     </td>

@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { Reminder } from '../types';
 import { Plus, Trash2, Edit2, X, Bell, Calendar, AlertCircle } from 'lucide-react';
+import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '../convex-api';
 
-interface RemindersProps {
-  reminders?: Reminder[];
-  onAddReminder?: (r: Partial<Reminder>) => void;
-  onDeleteReminder?: (id: string) => void;
-  onUpdateReminder?: (r: Reminder) => void;
-}
+const Reminders: React.FC = () => {
+  // ── Convex hooks ──────────────────────────────────────────────────
+  const convexReminders = useReminders();
+  const createReminder = useCreateReminder();
+  const updateReminder = useUpdateReminder();
+  const deleteReminder = useDeleteReminder();
 
-const Reminders: React.FC<RemindersProps> = ({ reminders = [], onAddReminder, onDeleteReminder, onUpdateReminder }) => {
+  // ── Local UI state (all hooks before any return) ──────────────────
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -20,17 +21,50 @@ const Reminders: React.FC<RemindersProps> = ({ reminders = [], onAddReminder, on
   const [deleteTarget, setDeleteTarget] = useState<Reminder | null>(null);
 
   const today = new Date().toISOString().split('T')[0];
-  
-  const stats = useMemo(() => {
-    const totalReminders = reminders.length;
-    const activeReminders = reminders.filter(r => r.reminderDate <= today && r.dueDate >= today).length;
-    const upcomingReminders = reminders.filter(r => r.reminderDate > today).length;
-    return { totalReminders, activeReminders, upcomingReminders };
-  }, [reminders, today]);
+
+  const reminders: Reminder[] = (convexReminders ?? []).map((r: any) => ({
+    id: r._id,
+    title: r.title,
+    description: r.description,
+    reminderDate: r.reminderDate,
+    dueDate: r.dueDate,
+    createdAt: r.createdAt,
+    createdBy: r.createdBy,
+  }));
+
+  const stats = useMemo(() => ({
+    totalReminders: reminders.length,
+    activeReminders: reminders.filter(r => r.reminderDate <= today && r.dueDate >= today).length,
+    upcomingReminders: reminders.filter(r => r.reminderDate > today).length,
+  }), [reminders, today]);
+
+  // ── Handlers ──────────────────────────────────────────────────────
+  const onAddReminder = async (r: Partial<Reminder>) => {
+    await createReminder({
+      title: r.title || 'Untitled',
+      description: r.description || '',
+      reminderDate: r.reminderDate || today,
+      dueDate: r.dueDate || today,
+    });
+  };
+
+  const onUpdateReminder = async (r: Reminder) => {
+    await updateReminder({
+      id: r.id as any,
+      title: r.title,
+      description: r.description || '',
+      reminderDate: r.reminderDate,
+      dueDate: r.dueDate,
+    });
+  };
+
+  const onDeleteReminder = async (id: string) => {
+    await deleteReminder({ id: id as any });
+  };
 
   const handleAdd = () => {
     if (!title || !reminderDate || !dueDate) { alert('Please provide title, reminder date and due date'); return; }
-    if (onAddReminder) onAddReminder({ title, description: desc, reminderDate, dueDate });
+    onAddReminder({ title, description: desc, reminderDate, dueDate });
     setTitle(''); setDesc(''); setReminderDate(''); setDueDate(''); setOpen(false);
   };
 
@@ -43,19 +77,24 @@ const Reminders: React.FC<RemindersProps> = ({ reminders = [], onAddReminder, on
   const handleUpdate = () => {
     if (!editing) return;
     if (!title || !reminderDate || !dueDate) { alert('Please provide title, reminder date and due date'); return; }
-    const updated: Reminder = { ...editing, title, description: desc, reminderDate, dueDate };
-    if (onUpdateReminder) onUpdateReminder(updated);
+    onUpdateReminder({ ...editing, title, description: desc, reminderDate, dueDate });
     setIsEditOpen(false); setEditing(null); setTitle(''); setDesc(''); setReminderDate(''); setDueDate('');
   };
 
-  const requestDelete = (r: Reminder) => {
-    setDeleteTarget(r);
-  };
+  const requestDelete = (r: Reminder) => setDeleteTarget(r);
 
   const confirmDelete = () => {
-    if (deleteTarget && onDeleteReminder) onDeleteReminder(deleteTarget.id);
+    if (deleteTarget) onDeleteReminder(deleteTarget.id);
     setDeleteTarget(null);
   };
+
+  if (convexReminders === undefined) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 animate-in fade-in duration-500 max-w-5xl mx-auto pb-10">

@@ -66,12 +66,9 @@ interface LayoutProps {
   onBunkChange: (id: string) => void;
   onLogout: () => void;
   user: User;
-  reminders?: Reminder[];
-  onAddReminder?: (r: Partial<Reminder>) => void;
-  onDeleteReminder?: (id: string) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkChange, onLogout, user, reminders = [], onAddReminder, onDeleteReminder }) => {
+const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkChange, onLogout, user }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('kr_sidebar_collapsed');
@@ -202,8 +199,8 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
                 <MapPin size={16} />
               </div>
               <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-bold text-slate-900 uppercase truncate leading-tight">{currentBunk.code}</span>
-                <span className="text-[9px] text-slate-500 font-bold uppercase truncate tracking-wider leading-none">{currentBunk.location}</span>
+                <span className="text-[11px] font-bold text-slate-900 uppercase truncate leading-tight">{currentBunk?.code ?? '...'}</span>
+                <span className="text-[9px] text-slate-500 font-bold uppercase truncate tracking-wider leading-none">{currentBunk?.location ?? ''}</span>
               </div>
             </div>
           ) : (
@@ -229,7 +226,7 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
                 <MapPin size={14} className="text-brand" />
                 <div className="text-left hidden sm:block">
                    <p className="text-[12px] font-bold text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
-                     {currentBunk.name}
+                     {currentBunk?.name ?? 'Loading...'}
                      <ChevronDown size={12} className={`text-slate-400 group-hover:text-brand transition-transform ${isBunkDropdownOpen ? 'rotate-180' : ''}`} />
                    </p>
                 </div>
@@ -238,7 +235,7 @@ const Layout: React.FC<LayoutProps> = ({ children, bunks, currentBunk, onBunkCha
               {isBunkDropdownOpen && (
                 <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in slide-in-from-top-1">
                   {bunks.map(bunk => {
-                    const isActive = bunk.id === currentBunk.id;
+                    const isActive = bunk.id === currentBunk?.id;
                     return (
                       <button
                         key={bunk.id}

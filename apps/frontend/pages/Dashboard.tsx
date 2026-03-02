@@ -80,15 +80,6 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
     };
   }, [selectedDate, vouchers, accounts]);
 
-  // Calculate if a reminder is urgent (less than 24 hours to due date)
-  const isUrgent = (reminder: Reminder) => {
-    const selectedDateObj = new Date(selectedDate);
-    const dueDateObj = new Date(reminder.dueDate);
-    const timeDiff = dueDateObj.getTime() - selectedDateObj.getTime();
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
-    return hoursDiff < 24;
-  };
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
@@ -186,9 +177,6 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
                 const aDueToday = a.dueDate === selectedDate ? 0 : 1;
                 const bDueToday = b.dueDate === selectedDate ? 0 : 1;
                 if (aDueToday !== bDueToday) return aDueToday - bDueToday;
-                const aUrgent = isUrgent(a) ? 0 : 1;
-                const bUrgent = isUrgent(b) ? 0 : 1;
-                if (aUrgent !== bUrgent) return aUrgent - bUrgent;
                 return a.dueDate.localeCompare(b.dueDate);
               });
               if (sorted.length === 0) return (
@@ -196,18 +184,15 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
               );
               return sorted.map(r => {
                 const dueToday = r.dueDate === selectedDate;
-                const urgent = isUrgent(r);
                 const colorClass = dueToday
                   ? 'bg-rose-50/90 border-rose-500'
-                  : urgent
-                  ? 'bg-orange-50/80 border-orange-400'
-                  : 'bg-amber-50/80 border-amber-400';
-                const iconClass = dueToday ? 'bg-rose-500 text-white' : urgent ? 'bg-orange-400 text-white' : 'bg-amber-400 text-white';
-                const badge = dueToday ? 'DUE TODAY' : urgent ? 'URGENT' : 'ACTIVE';
-                const badgeClass = dueToday ? 'bg-rose-500 text-white' : urgent ? 'bg-orange-400 text-white' : 'bg-amber-400 text-white';
-                const textMain = dueToday ? 'text-rose-900' : urgent ? 'text-orange-900' : 'text-amber-900';
-                const textSub = dueToday ? 'text-rose-700' : urgent ? 'text-orange-700' : 'text-amber-700';
-                const textDue = dueToday ? 'text-rose-600' : urgent ? 'text-orange-600' : 'text-amber-600';
+                  : 'bg-green-50/80 border-green-600';
+                const iconClass = dueToday ? 'bg-rose-500 text-white' : 'bg-green-600 text-white';
+                const badge = dueToday ? 'DUE TODAY' : 'ACTIVE';
+                const badgeClass = dueToday ? 'bg-rose-500 text-white' : 'bg-green-700 text-white';
+                const textMain = dueToday ? 'text-rose-900' : 'text-green-900';
+                const textSub = dueToday ? 'text-rose-700' : 'text-green-700';
+                const textDue = dueToday ? 'text-rose-600' : 'text-green-700';
                 return (
                   <div key={r.id} className={`p-4 border-l-4 rounded-xl flex items-start justify-between transition-all hover:shadow-md ${colorClass}`}>
                     <div className="flex items-start gap-3 flex-1 min-w-0">

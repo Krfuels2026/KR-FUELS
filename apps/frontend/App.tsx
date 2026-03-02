@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import AccountMaster from './pages/AccountMaster';
@@ -9,29 +8,45 @@ import LedgerReport from './pages/LedgerReport';
 import CashReport from './pages/CashReport';
 import Dashboard from './pages/Dashboard';
 import Reminders from './pages/Reminders';
-import RemindersConvex from './pages/RemindersConvex'; // PoC: Uses Convex
 import Login from './pages/Login';
 import Administration from './pages/Administration';
-import { Account, Voucher, Bunk, User, Reminder } from './types';
-import api, { setToken, getToken } from './api';
-import { useQuery } from 'convex/react';
+import { Account, Voucher, Bunk, User } from './types';
+import { getStoredUser, setStoredUser, clearStoredUser } from './lib/storage';
+import { useIdleLogout } from './hooks/useIdleLogout';
+import { useQuery, useMutation } from 'convex/react';
 import { api as convexApi } from '../../convex/_generated/api';
 
-// Frontend no longer seeds data locally — load via API
-
-const isUuid = (v?: string) => !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);
+// Convex IDs are opaque strings, not UUIDs
+const isValidId = (v?: string) => !!v && v.trim().length > 0;
 
 const App: React.FC = () => {
-  // Load bunks from Convex
+  // ── Convex Queries (real-time) ─────────────────────────────────────
   const convexBunks = useQuery(convexApi.queries.bunks.getAllBunks);
-  
-  const [bunks, setBunks] = useState<Bunk[]>(() => {
-    return [];
-  });
+  const convexAccounts = useQuery(convexApi.queries.accounts.getAllAccounts);
+  const convexVouchers = useQuery(convexApi.queries.vouchers.getAllVouchers);
+  const convexReminders = useQuery(convexApi.queries.reminders.getAllReminders);
 
-  const [users, setUsers] = useState<User[]>([]);
+  // ── Convex Mutations ───────────────────────────────────────────────
+  const convexCreateAccount = useMutation(convexApi.mutations.accounts.createAccount);
+  const convexUpdateAccount = useMutation(convexApi.mutations.accounts.updateAccount);
+  const convexDeleteAccount = useMutation(convexApi.mutations.accounts.deleteAccount);
+  const convexCreateVoucher = useMutation(convexApi.mutations.vouchers.createVoucher);
+  const convexUpdateVoucher = useMutation(convexApi.mutations.vouchers.updateVoucher);
+  const convexDeleteVoucher = useMutation(convexApi.mutations.vouchers.deleteVoucher);
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [bunks, setBunks] = useState<Bunk[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredUser<User>());
+
+  const handleLogout = useCallback(() => {
+    setCurrentUser(null);
+    clearStoredUser();
+  }, []);
+
+  // 30-minute idle auto-logout
+  useIdleLogout(handleLogout);
 
   const availableBunks = useMemo(() => {
     if (!currentUser) return [];
@@ -50,177 +65,160 @@ const App: React.FC = () => {
     }
   }, [availableBunks, currentBunkId]);
 
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const bunkAccounts = useMemo(() => accounts.filter(a => a.bunkId === currentBunkId), [accounts, currentBunkId]);
+  const bunkVouchers = useMemo(() => vouchers.filter(v => v.bunkId === currentBunkId), [vouchers, currentBunkId]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    localStorage.setItem('kr_fuels_user', JSON.stringify(user));
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('kr_fuels_user');
-    localStorage.removeItem('kr_fuels_current_bunk');
+    setStoredUser(user);
   };
 
   useEffect(() => {
     if (currentBunkId) localStorage.setItem('kr_fuels_current_bunk', currentBunkId);
   }, [currentBunkId]);
 
-  useEffect(() => {
-    // Persist minimal UI state only
-    localStorage.setItem('kr_fuels_bunks_db', JSON.stringify(bunks));
-  }, [bunks]);
-
-  useEffect(() => {
-    localStorage.setItem('kr_fuels_reminders', JSON.stringify(reminders));
-  }, [reminders]);
-
-  // Convert Convex bunks to frontend format
+  // Sync Convex bunks → state
   useEffect(() => {
     if (convexBunks) {
-      const formattedBunks: Bunk[] = convexBunks.map((b: any) => ({
+      setBunks(convexBunks.map((b: any) => ({
         id: b._id,
         name: b.name,
         code: b.code,
         location: b.location,
-      }));
-      setBunks(formattedBunks);
+      })));
     }
   }, [convexBunks]);
 
-  // Load initial data from API when authenticated
+  // Sync Convex accounts → state
   useEffect(() => {
-    const t = getToken();
-    if (!t) return;
+    if (convexAccounts) {
+      setAccounts(convexAccounts.map((a: any) => ({
+        id: a._id,
+        name: a.name,
+        parentId: a.parentId ?? null,
+        openingDebit: a.openingDebit,
+        openingCredit: a.openingCredit,
+        createdAt: a.createdAt,
+        bunkId: a.bunkId,
+      })));
+    }
+  }, [convexAccounts]);
 
-    // Skip NestJS API calls for now since we migrated to Convex
-    // Only load accounts and vouchers if NestJS is still running
-    console.log('Skipping NestJS API calls - using Convex for bunks and auth');
-  }, []);
+  // Sync Convex vouchers → state
+  useEffect(() => {
+    if (convexVouchers) {
+      setVouchers(convexVouchers.map((v: any) => ({
+        id: v._id,
+        date: v.txnDate,
+        accountId: v.accountId,
+        debit: v.debit,
+        credit: v.credit,
+        description: v.description,
+        createdAt: v.createdAt,
+        bunkId: v.bunkId,
+      })));
+    }
+  }, [convexVouchers]);
 
-  const bunkAccounts = useMemo(() => accounts.filter(a => a.bunkId === currentBunkId), [accounts, currentBunkId]);
-  const bunkVouchers = useMemo(() => vouchers.filter(v => v.bunkId === currentBunkId), [vouchers, currentBunkId]);
-
-  const addAccount = (account: Partial<Account>) => {
-    const newAccount = { ...account, bunkId: currentBunkId } as Account;
-    setAccounts(prev => [...prev, newAccount]);
+  const addAccount = async (account: Partial<Account>) => {
+    if (!account.name) return;
+    try {
+      await convexCreateAccount({
+        name: account.name,
+        parentId: (account.parentId as any) || undefined,
+        openingDebit: account.openingDebit || 0,
+        openingCredit: account.openingCredit || 0,
+        bunkId: currentBunkId as any,
+      });
+    } catch (err: any) {
+      alert('Failed to create account: ' + (err.message || err));
+    }
   };
 
-  const updateAccount = (account: Account) => {
-    setAccounts(prev => prev.map(a => a.id === account.id ? account : a));
+  const updateAccount = async (account: Account) => {
+    try {
+      await convexUpdateAccount({
+        id: account.id as any,
+        name: account.name,
+        parentId: (account.parentId as any) || undefined,
+        openingDebit: account.openingDebit,
+        openingCredit: account.openingCredit,
+      });
+    } catch (err: any) {
+      alert('Failed to update account: ' + (err.message || err));
+    }
   };
 
-  const deleteAccount = (id: string) => {
-    const hasChildren = accounts.some(a => a.parentId === id);
-    if (hasChildren) {
-      alert("Cannot delete account group with active sub-accounts.");
+  const deleteAccount = async (id: string) => {
+    try {
+      await convexDeleteAccount({ id: id as any });
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete account');
+    }
+  };
+
+  const addVoucher = async (voucher: Partial<Voucher>) => {
+    if (!voucher.accountId || !isValidId(voucher.accountId)) {
+      alert('Please select a valid ledger account before posting.');
       return;
     }
-    setAccounts(prev => prev.filter(a => a.id !== id));
-    setVouchers(prev => prev.filter(v => v.accountId !== id));
+    if (!currentBunkId || !isValidId(currentBunkId)) {
+      alert('No bunk selected. Please select a bunk before posting.');
+      return;
+    }
+    try {
+      await convexCreateVoucher({
+        txnDate: voucher.date || new Date().toISOString().split('T')[0],
+        accountId: voucher.accountId as any,
+        debit: voucher.debit || 0,
+        credit: voucher.credit || 0,
+        description: voucher.description || '',
+        bunkId: currentBunkId as any,
+      });
+    } catch (err: any) {
+      alert('Failed to post voucher: ' + (err.message || err));
+    }
   };
 
-  const addVoucher = (voucher: Partial<Voucher>) => {
-    (async () => {
-      const token = getToken();
-      if (token) {
-        try {
-          if (!voucher.accountId || !isUuid(voucher.accountId)) {
-            alert('Please select a valid ledger account before posting (account must be selected).');
-            return;
-          }
-          if (!currentBunkId || !isUuid(currentBunkId)) {
-            alert('No bunk selected. Please select a bunk before posting.');
-            return;
-          }
-
-          const payload = {
-            date: voucher.date,
-            accountId: String(voucher.accountId),
-            debit: voucher.debit || 0,
-            credit: voucher.credit || 0,
-            description: voucher.description || '',
-            bunkId: String(currentBunkId),
-          };
-          const created = await api.createVoucher(payload);
-          setVouchers(prev => [...prev, created]);
-        } catch (err: any) {
-          alert('Failed to post voucher: ' + (err.message || err));
-        }
-      } else {
-        const newVoucher = { ...voucher, bunkId: currentBunkId } as Voucher;
-        setVouchers(prev => [...prev, newVoucher]);
-      }
-    })();
+  const deleteVoucher = async (id: string) => {
+    try {
+      await convexDeleteVoucher({ id: id as any });
+    } catch (err: any) {
+      alert('Failed to delete voucher: ' + (err.message || err));
+    }
   };
 
-  const deleteVoucher = (id: string) => {
-    (async () => {
-      const token = getToken();
-      if (token) {
-        try {
-          await api.deleteVoucher(id);
-          setVouchers(prev => prev.filter(v => v.id !== id));
-        } catch (err: any) {
-          alert('Failed to delete voucher: ' + (err.message || err));
-        }
-      } else {
-        setVouchers(prev => prev.filter(v => v.id !== id));
-      }
-    })();
-  };
-
-  const updateVoucher = (voucher: Voucher) => {
-    (async () => {
-      const token = getToken();
-      if (token) {
-        try {
-          const payload: any = {
-            date: voucher.date,
-            accountId: voucher.accountId,
-            debit: voucher.debit,
-            credit: voucher.credit,
-            description: voucher.description,
-          };
-          const updated = await api.updateVoucher(voucher.id, payload);
-          setVouchers(prev => prev.map(v => v.id === voucher.id ? updated : v));
-        } catch (err: any) {
-          alert('Failed to update voucher: ' + (err.message || err));
-        }
-      } else {
-        setVouchers(prev => prev.map(v => v.id === voucher.id ? voucher : v));
-      }
-    })();
-  };
-
-  const addReminder = (reminder: Partial<Reminder>) => {
-    const newReminder: Reminder = {
-      id: `r_${Math.random().toString(36).substr(2, 9)}`,
-      title: reminder.title || 'Untitled',
-      description: reminder.description || '',
-      reminderDate: reminder.reminderDate || new Date().toISOString().split('T')[0],
-      dueDate: reminder.dueDate || new Date().toISOString().split('T')[0],
-      createdAt: Date.now(),
-      createdBy: reminder.createdBy || currentUser?.username
-    };
-    setReminders(prev => [...prev, newReminder]);
-  };
-
-  const deleteReminder = (id: string) => {
-    setReminders(prev => prev.filter(r => r.id !== id));
-  };
-
-  const updateReminder = (reminder: Reminder) => {
-    setReminders(prev => prev.map(r => r.id === reminder.id ? reminder : r));
+  const updateVoucher = async (voucher: Voucher) => {
+    try {
+      await convexUpdateVoucher({
+        id: voucher.id as any,
+        txnDate: voucher.date,
+        accountId: voucher.accountId as any,
+        debit: voucher.debit,
+        credit: voucher.credit,
+        description: voucher.description,
+      });
+    } catch (err: any) {
+      alert('Failed to update voucher: ' + (err.message || err));
+    }
   };
 
   const currentBunk = availableBunks.find(b => b.id === currentBunkId) || availableBunks[0] || bunks[0];
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // Wait for Convex data to load before rendering
+  if (convexBunks === undefined) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-500 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -231,9 +229,6 @@ const App: React.FC = () => {
           onBunkChange={setCurrentBunkId}
           onLogout={handleLogout}
           user={currentUser}
-          reminders={reminders}
-          onAddReminder={addReminder}
-          onDeleteReminder={deleteReminder}
         >
         <Routes>
           <Route 
@@ -242,9 +237,19 @@ const App: React.FC = () => {
               <Dashboard 
                 accounts={bunkAccounts} 
                 vouchers={bunkVouchers} 
-                locationName={currentBunk.location} 
+                locationName={currentBunk?.location || ''} 
                 onDeleteVoucher={deleteVoucher}
-                reminders={[]} // PoC: Reminders now use Convex, Dashboard shows none for now
+                reminders={
+                  (convexReminders || []).map((r: any) => ({
+                    id: r._id,
+                    title: r.title,
+                    description: r.description,
+                    reminderDate: r.reminderDate,
+                    dueDate: r.dueDate,
+                    createdAt: r.createdAt,
+                    createdBy: r.createdBy,
+                  }))
+                }
               />
             } 
           />
@@ -254,9 +259,9 @@ const App: React.FC = () => {
           <Route path="/vouchers" element={<DailyVoucher accounts={bunkAccounts} vouchers={bunkVouchers} onSave={addVoucher} onUpdateVoucher={updateVoucher} onDeleteVoucher={deleteVoucher} />} />
           <Route path="/ledger" element={<LedgerReport accounts={bunkAccounts} vouchers={bunkVouchers} />} />
           <Route path="/cash-report" element={<CashReport accounts={bunkAccounts} vouchers={bunkVouchers} onDeleteVoucher={deleteVoucher} />} />
-          <Route path="/reminders" element={<RemindersConvex />} />
+          <Route path="/reminders" element={<Reminders />} />
           {currentUser.role === 'super_admin' && (
-            <Route path="/administration" element={<Administration bunks={bunks} users={users} setBunks={setBunks} setUsers={setUsers} />} />
+            <Route path="/administration" element={<Administration />} />
           )}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
