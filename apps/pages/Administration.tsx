@@ -29,19 +29,16 @@ const Administration: React.FC = () => {
     accessibleBunkIds: [] as string[]
   });
 
-  // ── Convex data ────────────────────────────────────────────────────
   const convexUsers = useQuery(convexApi.queries.users.getAllUsers);
   const allUserBunkAccess = useQuery(convexApi.queries.users.getAllUserBunkAccess);
   const convexBunksRaw = useQuery(convexApi.queries.bunks.getAllBunks);
-  const bunks = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
+  const bunks: { id: string; name: string; code: string; location: string }[] = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
 
-  // ── Convex mutations / actions ──────────────────────────────────────
   const createBunk = useMutation(convexApi.mutations.bunks.createBunk);
   const deleteBunk = useMutation(convexApi.mutations.bunks.deleteBunk);
   const registerUser = useAction((convexApi.actions.auth as any).registerUser);
   const deleteUser = useMutation(convexApi.mutations.users.deleteUser);
 
-  // ── Handlers ───────────────────────────────────────────────────────
   const handleAddBunk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBunk.name || !newBunk.code) return;
@@ -254,7 +251,6 @@ const Administration: React.FC = () => {
         </div>
       )}
 
-      {/* Add Bunk Modal */}
       {isAddingBunk && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddingBunk(false)} />
@@ -287,7 +283,6 @@ const Administration: React.FC = () => {
         </div>
       )}
 
-      {/* Add User Modal */}
       {isAddingUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddingUser(false)} />

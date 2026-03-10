@@ -16,17 +16,14 @@ import { useIdleLogout } from './hooks/useIdleLogout';
 import { useQuery, useMutation } from 'convex/react';
 import { api as convexApi } from '../convex/_generated/api';
 
-// Convex IDs are opaque strings, not UUIDs
 const isValidId = (v?: string) => !!v && v.trim().length > 0;
 
 const App: React.FC = () => {
-  // ── Convex Queries (real-time) ─────────────────────────────────────
   const convexBunks = useQuery(convexApi.queries.bunks.getAllBunks);
   const convexAccounts = useQuery(convexApi.queries.accounts.getAllAccounts);
   const convexVouchers = useQuery(convexApi.queries.vouchers.getAllVouchers);
   const convexReminders = useQuery(convexApi.queries.reminders.getAllReminders);
 
-  // ── Convex Mutations ───────────────────────────────────────────────
   const convexCreateAccount = useMutation(convexApi.mutations.accounts.createAccount);
   const convexUpdateAccount = useMutation(convexApi.mutations.accounts.updateAccount);
   const convexDeleteAccount = useMutation(convexApi.mutations.accounts.deleteAccount);
@@ -45,7 +42,6 @@ const App: React.FC = () => {
     clearStoredUser();
   }, []);
 
-  // 30-minute idle auto-logout
   useIdleLogout(handleLogout);
 
   const availableBunks = useMemo(() => {
@@ -77,7 +73,6 @@ const App: React.FC = () => {
     if (currentBunkId) localStorage.setItem('kr_fuels_current_bunk', currentBunkId);
   }, [currentBunkId]);
 
-  // Sync Convex bunks → state
   useEffect(() => {
     if (convexBunks) {
       setBunks(convexBunks.map((b: any) => ({
@@ -89,7 +84,6 @@ const App: React.FC = () => {
     }
   }, [convexBunks]);
 
-  // Sync Convex accounts → state
   useEffect(() => {
     if (convexAccounts) {
       setAccounts(convexAccounts.map((a: any) => ({
@@ -104,7 +98,6 @@ const App: React.FC = () => {
     }
   }, [convexAccounts]);
 
-  // Sync Convex vouchers → state
   useEffect(() => {
     if (convexVouchers) {
       setVouchers(convexVouchers.map((v: any) => ({
@@ -209,7 +202,6 @@ const App: React.FC = () => {
     return <Login onLogin={handleLogin} />;
   }
 
-  // Wait for Convex data to load before rendering
   if (convexBunks === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">

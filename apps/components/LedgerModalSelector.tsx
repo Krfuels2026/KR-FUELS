@@ -39,13 +39,11 @@ const LedgerModalSelector: React.FC<LedgerModalSelectorProps> = ({
 
   const selectedAccount = useMemo(() => accounts.find(a => a.id === selectedId), [accounts, selectedId]);
   
-  // Identify all IDs that are parents of at least one other account
   const parentIds = useMemo(() => new Set(accounts.map(a => a.parentId).filter((id): id is string => id !== null)), [accounts]);
 
   const renderHierarchical = (parentId: string | null, depth: number = 0) => {
     const children = accounts.filter(a => a.parentId === parentId);
     
-    // Sort: groups first, then ledgers
     const sortedChildren = [...children].sort((a, b) => {
       const aIsParent = parentIds.has(a.id);
       const bIsParent = parentIds.has(b.id);
@@ -58,7 +56,6 @@ const LedgerModalSelector: React.FC<LedgerModalSelectorProps> = ({
       const isSelected = selectedId === account.id;
       const isParent = parentIds.has(account.id);
       const isRoot = account.parentId === null;
-      // If allowGroups is true, everything is selectable. Otherwise, only leaf nodes.
       const isSelectable = allowGroups ? true : (!isParent && !isRoot);
 
       // Filter logic: if searching, only show if name matches or has matching children

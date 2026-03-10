@@ -59,14 +59,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-brand-light flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-[1100px] min-h-[650px] bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col md:flex-row border border-brand/5">
         
-        {/* Left Section - Illustration & Branding */}
         <div className="w-full md:w-1/2 bg-brand-light p-8 md:p-16 flex flex-col items-center justify-center text-center relative overflow-hidden border-b md:border-b-0 md:border-r border-brand/5">
-          {/* Subtle Background Elements */}
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand/5 rounded-full blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand/10 rounded-full blur-3xl" />
           
           <div className="relative z-10 w-full max-w-[400px]">
-            {/* Custom Illustration Composition */}
             <div className="mb-12 relative">
               <div className="bg-white p-8 rounded-[40px] shadow-2xl shadow-green-500/5 inline-block">
                 <div className="relative">
@@ -87,7 +84,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               Unleash Operational Excellence with our Station Management Platform
             </p>
 
-            {/* Pagination style dots as seen in template */}
             <div className="flex gap-2 justify-center mt-12">
               <div className="w-2.5 h-2.5 rounded-full bg-brand" />
               <div className="w-2.5 h-2.5 rounded-full bg-brand/20" />
@@ -97,7 +93,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Right Section - Login Form */}
         <div className="w-full md:w-1/2 p-8 md:p-20 flex flex-col justify-center bg-white">
           <div className="max-w-[380px] mx-auto w-full">
             <KRLogoFull className="mb-14 scale-110" />

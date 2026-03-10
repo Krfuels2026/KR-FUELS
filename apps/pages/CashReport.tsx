@@ -183,7 +183,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
 
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
-    const years = [];
+    const years: number[] = [];
     const fyBase = new Date().getMonth() < 3 ? currentYear - 1 : currentYear;
     for (let i = 0; i < 5; i++) {
       years.push(fyBase - i);
@@ -287,7 +287,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
 
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
-      {/* Refined Sticky Header Section */}
       <div className="sticky top-0 -mx-5 px-5 pt-4 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
@@ -337,7 +336,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
 
         </div>
 
-        {/* Popup modal for Monthly / Financial Year / Custom filters */}
         {showFilterPopup && (filterType === 'daily' || filterType === 'monthly' || filterType === 'financial_year' || filterType === 'custom') && (
           <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowFilterPopup(false)} />
@@ -363,7 +361,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
               </div>
 
               <div className="p-6 space-y-5">
-                {/* Daily picker */}
                 {filterType === 'daily' && (
                   <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Statement Date</label>
@@ -385,7 +382,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
                   </div>
                 )}
 
-                {/* Monthly picker */}
                 {filterType === 'monthly' && (
                   <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Month & Year</label>
@@ -434,7 +430,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
                   </div>
                 )}
 
-                {/* Financial Year picker */}
                 {filterType === 'financial_year' && (
                   <div className="space-y-2">
                     <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Financial Year</label>
@@ -453,7 +448,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
                   </div>
                 )}
 
-                {/* Custom range pickers */}
                 {filterType === 'custom' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -538,7 +532,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none print:rounded-none mt-4">
-        {/* Print-only Header */}
         <div className="hidden print:block print-header">
           <h1>KR-FUELS ACCOUNTING</h1>
           <p>CASH REPORT</p>

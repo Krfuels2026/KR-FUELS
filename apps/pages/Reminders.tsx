@@ -4,13 +4,11 @@ import { Plus, Trash2, Edit2, X, Bell, Calendar, AlertCircle } from 'lucide-reac
 import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '../convex-api';
 
 const Reminders: React.FC = () => {
-  // ── Convex hooks ──────────────────────────────────────────────────
   const convexReminders = useReminders();
   const createReminder = useCreateReminder();
   const updateReminder = useUpdateReminder();
   const deleteReminder = useDeleteReminder();
 
-  // ── Local UI state (all hooks before any return) ──────────────────
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -38,7 +36,6 @@ const Reminders: React.FC = () => {
     upcomingReminders: reminders.filter(r => r.reminderDate > today).length,
   }), [reminders, today]);
 
-  // ── Handlers ──────────────────────────────────────────────────────
   const onAddReminder = async (r: Partial<Reminder>) => {
     await createReminder({
       title: r.title || 'Untitled',
@@ -97,20 +94,21 @@ const Reminders: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-500 max-w-5xl mx-auto pb-10">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Reminders</h1>
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setOpen(true)} 
-            className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-[10px] flex items-center gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10"
-          >
-            <Plus size={14} strokeWidth={3} /> Add Reminder
-          </button>
+    <div className="animate-in fade-in duration-500 max-w-5xl mx-auto pb-10 h-full flex flex-col">
+      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-4 pt-2 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Reminders</h1>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setOpen(true)} 
+              className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-[10px] flex items-center gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10"
+            >
+              <Plus size={14} strokeWidth={3} /> Add Reminder
+            </button>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-blue-200 transition-colors">
           <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
             <Bell size={18} />
@@ -138,20 +136,22 @@ const Reminders: React.FC = () => {
             <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.upcomingReminders}</p>
           </div>
         </div>
+        </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Title</th>
-              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
-              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Reminder Date</th>
-              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Due Date</th>
-              <th className="px-8 py-4 w-32"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+        <div className="overflow-auto flex-1 custom-scrollbar">
+          <table className="w-full text-left border-collapse">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Title</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Reminder Date</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Due Date</th>
+                <th className="px-8 py-4 w-32"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
             {reminders.length === 0 && (
               <tr><td colSpan={5} className="py-12 text-center text-[12px] text-slate-400 uppercase tracking-widest">No reminders added yet.</td></tr>
             )}
@@ -183,8 +183,9 @@ const Reminders: React.FC = () => {
                 </td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {open && (
@@ -344,7 +345,6 @@ const Reminders: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Delete confirmation modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDeleteTarget(null)} />
