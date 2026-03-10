@@ -1,19 +1,19 @@
-
 {
-  "name": "kr-fuels-accounting",
+  "name": "kr-fuels",
   "private": true,
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "dev": "cd apps && vite",
+    "build": "cd apps && tsc && vite build",
+    "preview": "cd apps && vite preview"
   },
   "dependencies": {
+    "convex": "^1.32.0",
+    "lucide-react": "^0.463.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.0",
-    "lucide-react": "^0.463.0"
+    "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

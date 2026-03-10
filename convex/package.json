@@ -1,0 +1,9 @@
+{
+  "name": "kr-fuels-convex",
+  "private": true,
+  "version": "1.0.0",
+  "description": "KR-FUELS Convex Backend",
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
+  }
+}
