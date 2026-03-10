@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Account, Voucher } from '../types';
 import { formatCurrency, formatDateToDDMMYYYY } from '../utils';
-import { Filter, TrendingUp, History, Calendar, FileSpreadsheet, FileText, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, X, Mail, Send, Plus, Trash2 } from 'lucide-react';
+import { Filter, TrendingUp, History, Calendar, FileSpreadsheet, FileText, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, X } from 'lucide-react';
 
 interface CashReportProps {
   accounts: Account[];
@@ -35,11 +35,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   const customFromRef = useRef<HTMLInputElement>(null);
   const customToRef = useRef<HTMLInputElement>(null);
 
-  const [showMailModal, setShowMailModal] = useState(false);
-  const [mailRecipients, setMailRecipients] = useState<string[]>(['']);
-  const [mailNote, setMailNote] = useState('');
-  const [mailSent, setMailSent] = useState(false);
-
   const getFilterLabel = () => {
     switch (filterType) {
       case 'daily': return `Date: ${formatDateToDDMMYYYY(range.from)}`;
@@ -53,32 +48,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
       case 'custom': return `Period: ${formatDateToDDMMYYYY(range.from)} to ${formatDateToDDMMYYYY(range.to)}`;
       default: return '';
     }
-  };
-
-  const buildMailBody = (note: string) => {
-    const rows = reportData.periodVouchers.map(v => {
-      const acct = accounts.find(a => a.id === v.accountId)?.name || '';
-      return `${formatDateToDDMMYYYY(v.date)}  |  ${v.description.toUpperCase().padEnd(40)}  |  ${acct.padEnd(30)}  |  CR: ${v.credit > 0 ? formatCurrency(v.credit) : '—'}  |  DR: ${v.debit > 0 ? formatCurrency(v.debit) : '—'}`;
-    }).join('\n');
-
-    return [
-      `STATEMENT OF CASH`,
-      `==================`,
-      getFilterLabel(),
-      ``,
-      `Opening Balance : ${formatCurrency(Math.abs(reportData.openingBalance))} ${reportData.openingBalance >= 0 ? 'DR' : 'CR'}`,
-      `Total Inflow    : ${formatCurrency(reportData.totalCr)}`,
-      `Total Outflow   : ${formatCurrency(reportData.totalDr)}`,
-      `Closing Balance : ${formatCurrency(Math.abs(reportData.closingBalance))} ${reportData.closingBalance >= 0 ? 'DR' : 'CR'}`,
-      ``,
-      `TRANSACTION DETAILS`,
-      `-------------------`,
-      rows || 'No transactions in this period.',
-      ``,
-      note ? `Note: ${note}` : '',
-      ``,
-      `-- Sent from KR Fuels Management System`,
-    ].filter(l => l !== undefined).join('\n');
   };
 
   const handleGeneratePDF = () => {
@@ -178,7 +147,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     <thead>
       <tr>
         <th style="width:110px;">Date</th>
-        <th>Description / Account</th>
+        <th>Description</th>
         <th style="width:140px;">Credit (CR)</th>
         <th style="width:140px;">Debit (DR)</th>
       </tr>
@@ -200,8 +169,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     </tfoot>` : ''}
   </table>
 
-  ${mailNote ? `<div class="note"><strong>Note:</strong> ${mailNote}</div>` : ''}
-
   <div class="footer">KR Fuels Management System &nbsp;·&nbsp; Confidential &nbsp;·&nbsp; ${new Date().toLocaleString('en-IN')}</div>
 </body>
 </html>`;
@@ -212,25 +179,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
       win.document.close();
       setTimeout(() => { win.focus(); win.print(); }, 400);
     }
-  };
-
-  const handleSendMail = () => {
-    const recipients = mailRecipients.filter(e => e.trim()).join(',');
-    if (!recipients) return;
-    const subject = `Cash Statement — ${getFilterLabel()}`;
-    const body = buildMailBody(mailNote);
-    const mailtoLink = `mailto:${recipients}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoLink;
-    setMailSent(true);
-    setTimeout(() => {
-      setMailSent(false);
-      setShowMailModal(false);
-    }, 1500);
-  };
-
-  const handleSendWithPDF = () => {
-    handleGeneratePDF();
-    setTimeout(() => handleSendMail(), 600);
   };
 
   const availableYears = useMemo(() => {
@@ -357,12 +305,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
               className="px-6 py-2.5 bg-brand text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
             >
               <FileText size={16} /> PDF
-            </button>
-            <button
-              onClick={() => { setMailSent(false); setShowMailModal(true); }}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-blue-700 transition-all shadow-md shadow-blue-100 uppercase tracking-widest active:scale-95"
-            >
-              <Mail size={16} /> Send Mail
             </button>
           </div>
         </div>
@@ -566,116 +508,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
           </div>
         )}
 
-      {/* Send Mail Modal */}
-      {showMailModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowMailModal(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-md">
-                  <Mail size={18} />
-                </div>
-                <div>
-                  <h2 className="text-[13px] font-black text-slate-900 uppercase tracking-widest">Send Cash Report</h2>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">{getFilterLabel()}</p>
-                </div>
-              </div>
-              <button onClick={() => setShowMailModal(false)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {/* Summary preview */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Opening', value: `${formatCurrency(Math.abs(reportData.openingBalance))} ${reportData.openingBalance >= 0 ? 'DR' : 'CR'}`, color: 'text-amber-700' },
-                  { label: 'Inflow',  value: formatCurrency(reportData.totalCr),  color: 'text-emerald-700' },
-                  { label: 'Outflow', value: formatCurrency(reportData.totalDr),  color: 'text-rose-600'    },
-                  { label: 'Closing', value: `${formatCurrency(Math.abs(reportData.closingBalance))} ${reportData.closingBalance >= 0 ? 'DR' : 'CR'}`, color: 'text-blue-700' },
-                ].map(s => (
-                  <div key={s.label}>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{s.label}</p>
-                    <p className={`text-[13px] font-black font-mono tabular-nums ${s.color}`}>{s.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Recipients */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Recipients</label>
-                <div className="space-y-2">
-                  {mailRecipients.map((email, idx) => (
-                    <div key={idx} className="flex gap-2">
-                      <input
-                        type="email"
-                        placeholder="email@example.com"
-                        value={email}
-                        onChange={e => {
-                          const updated = [...mailRecipients];
-                          updated[idx] = e.target.value;
-                          setMailRecipients(updated);
-                        }}
-                        className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all placeholder:text-slate-300 placeholder:font-normal"
-                      />
-                      {mailRecipients.length > 1 && (
-                        <button
-                          onClick={() => setMailRecipients(mailRecipients.filter((_, i) => i !== idx))}
-                          className="p-2.5 text-slate-400 hover:text-rose-500 bg-slate-50 border border-slate-200 rounded-xl transition-all"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    onClick={() => setMailRecipients([...mailRecipients, ''])}
-                    className="text-[10px] font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1.5 hover:text-blue-800 transition-colors"
-                  >
-                    <Plus size={13} /> Add Recipient
-                  </button>
-                </div>
-              </div>
-
-              {/* Note */}
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest">Additional Note <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
-                <textarea
-                  rows={3}
-                  placeholder="Add a note to include in the email..."
-                  value={mailNote}
-                  onChange={e => setMailNote(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] text-slate-800 outline-none focus:border-blue-400 focus:bg-white transition-all resize-none placeholder:text-slate-300"
-                />
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 pt-1">
-                <button
-                  onClick={() => setShowMailModal(false)}
-                  className="flex-1 px-4 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSendWithPDF}
-                  disabled={mailSent || !mailRecipients.some(e => e.trim())}
-                  className={`flex-1 px-4 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md ${
-                    mailSent
-                      ? 'bg-emerald-500 text-white cursor-default'
-                      : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95 shadow-blue-100 disabled:opacity-40 disabled:cursor-not-allowed'
-                  }`}
-                >
-                  {mailSent ? <><span>✓</span> Done!</> : <><Send size={14} /> Send Mail</>}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-amber-500 transition-all hover:shadow-md">
             <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest mb-2">Opening Balance</p>
@@ -717,7 +549,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 print:bg-slate-100">
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-40">Date</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description / Account</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description </th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Credit (CR)</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Debit (DR)</th>
               </tr>

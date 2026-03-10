@@ -140,28 +140,28 @@ const Reminders: React.FC = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl shadow-sm">
-        <table className="w-full text-left">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-50/80">
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">Title</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">Description</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">Reminder Date</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-600 uppercase tracking-widest">Due Date</th>
-              <th className="px-4 py-3 w-32"></th>
+            <tr className="bg-slate-50 border-b border-slate-200">
+              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Title</th>
+              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
+              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Reminder Date</th>
+              <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Due Date</th>
+              <th className="px-8 py-4 w-32"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {reminders.length === 0 && (
-              <tr><td colSpan={5} className="py-8 text-center text-[11px] text-slate-400">No reminders added yet.</td></tr>
+              <tr><td colSpan={5} className="py-12 text-center text-[12px] text-slate-400 uppercase tracking-widest">No reminders added yet.</td></tr>
             )}
             {reminders.map(r => (
               <tr key={r.id} className="group hover:bg-slate-50/50 transition-colors">
-                <td className="px-4 py-3 text-[13px] font-bold text-slate-800">{r.title}</td>
-                <td className="px-4 py-3 text-[13px] text-slate-600">{r.description}</td>
-                <td className="px-4 py-3 text-[13px] text-slate-600">{r.reminderDate}</td>
-                <td className="px-4 py-3 text-[13px] text-slate-600">{r.dueDate}</td>
-                <td className="px-4 py-3 text-center">
+                <td className="px-8 py-4 text-[14px] font-black text-slate-800 uppercase tracking-tight">{r.title}</td>
+                <td className="px-8 py-4 text-[14px] font-medium text-slate-600">{r.description}</td>
+                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums">{r.reminderDate}</td>
+                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums">{r.dueDate}</td>
+                <td className="px-8 py-4 text-center">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button 
                       onClick={() => openEdit(r)} 
