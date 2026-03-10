@@ -2,7 +2,6 @@
 
 interface ImportMetaEnv {
   readonly VITE_CONVEX_URL: string;
-  readonly VITE_API_BASE?: string;
 }
 
 interface ImportMeta {

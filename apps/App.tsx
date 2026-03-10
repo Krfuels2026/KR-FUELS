@@ -14,7 +14,7 @@ import { Account, Voucher, Bunk, User } from './types';
 import { getStoredUser, setStoredUser, clearStoredUser } from './lib/storage';
 import { useIdleLogout } from './hooks/useIdleLogout';
 import { useQuery, useMutation } from 'convex/react';
-import { api as convexApi } from '../../convex/_generated/api';
+import { api as convexApi } from '../convex/_generated/api';
 
 // Convex IDs are opaque strings, not UUIDs
 const isValidId = (v?: string) => !!v && v.trim().length > 0;

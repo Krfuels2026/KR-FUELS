@@ -10,7 +10,6 @@
 
 import type * as actions_auth from "../actions/auth.js";
 import type * as actions_seed from "../actions/seed.js";
-import type * as helpers_auth from "../helpers/auth.js";
 import type * as mutations_accounts from "../mutations/accounts.js";
 import type * as mutations_bunks from "../mutations/bunks.js";
 import type * as mutations_reminders from "../mutations/reminders.js";
@@ -33,7 +32,6 @@ import type {
 declare const fullApi: ApiFromModules<{
   "actions/auth": typeof actions_auth;
   "actions/seed": typeof actions_seed;
-  "helpers/auth": typeof helpers_auth;
   "mutations/accounts": typeof mutations_accounts;
   "mutations/bunks": typeof mutations_bunks;
   "mutations/reminders": typeof mutations_reminders;

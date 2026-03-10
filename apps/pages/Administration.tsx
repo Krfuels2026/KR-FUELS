@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useAction } from 'convex/react';
-import { api as convexApi } from '../../../convex/_generated/api';
+import { api as convexApi } from '../../convex/_generated/api';
 import { 
   Building2, 
   Users, 

@@ -2,20 +2,24 @@
   "name": "kr-fuels",
   "private": true,
   "version": "1.0.0",
-  "workspaces": [
-    "apps/frontend",
-    "apps/backend"
-  ],
+  "type": "module",
   "scripts": {
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "dev:backend": "npm run start:dev --workspace=apps/backend",
-    "build:frontend": "npm run build --workspace=apps/frontend",
-    "build:backend": "npm run build --workspace=apps/backend"
-  },
-  "devDependencies": {
-    "convex": "^1.32.0"
+    "dev": "cd apps && vite",
+    "build": "cd apps && tsc && vite build",
+    "preview": "cd apps && vite preview"
   },
   "dependencies": {
-    "ngrok": "^5.0.0-beta.2"
+    "convex": "^1.32.0",
+    "lucide-react": "^0.463.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0"
   }
 }
