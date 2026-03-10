@@ -159,23 +159,23 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
                 <Zap size={13} className="text-slate-400" />
                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active</span>
-                <span className="text-[13px] font-black text-slate-800 tabular-nums ml-1">{(reminders || []).filter(r => r.reminderDate <= selectedDate && r.dueDate >= selectedDate).length}</span>
+                <span className="text-[13px] font-black text-slate-800 tabular-nums ml-1">{(reminders || []).filter(r => r.reminderDate <= todayStr && r.dueDate >= todayStr).length}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
                 <BarChart3 size={13} className="text-rose-400" />
                 <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Due Today</span>
-                <span className="text-[13px] font-black text-rose-700 tabular-nums ml-1">{(reminders || []).filter(r => r.dueDate === selectedDate).length}</span>
+                <span className="text-[13px] font-black text-rose-700 tabular-nums ml-1">{(reminders || []).filter(r => r.dueDate === todayStr).length}</span>
               </div>
             </div>
           </div>
           {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
             {(() => {
-              const active = (reminders || []).filter(r => r.reminderDate <= selectedDate && r.dueDate >= selectedDate);
+              const active = (reminders || []).filter(r => r.reminderDate <= todayStr && r.dueDate >= todayStr);
               // Sort: due today first, then urgent (< 24h), then others; within each group by dueDate asc
               const sorted = [...active].sort((a, b) => {
-                const aDueToday = a.dueDate === selectedDate ? 0 : 1;
-                const bDueToday = b.dueDate === selectedDate ? 0 : 1;
+                const aDueToday = a.dueDate === todayStr ? 0 : 1;
+                const bDueToday = b.dueDate === todayStr ? 0 : 1;
                 if (aDueToday !== bDueToday) return aDueToday - bDueToday;
                 return a.dueDate.localeCompare(b.dueDate);
               });
@@ -183,7 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
                 <p className="text-[11px] text-slate-400 uppercase tracking-wider text-center pt-16">No reminders for this date</p>
               );
               return sorted.map(r => {
-                const dueToday = r.dueDate === selectedDate;
+                const dueToday = r.dueDate === todayStr;
                 const colorClass = dueToday
                   ? 'bg-rose-50/90 border-rose-500'
                   : 'bg-green-50/80 border-green-600';
