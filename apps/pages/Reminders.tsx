@@ -4,13 +4,11 @@ import { Plus, Trash2, Edit2, X, Bell, Calendar, AlertCircle } from 'lucide-reac
 import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '../convex-api';
 
 const Reminders: React.FC = () => {
-  // ── Convex hooks ──────────────────────────────────────────────────
   const convexReminders = useReminders();
   const createReminder = useCreateReminder();
   const updateReminder = useUpdateReminder();
   const deleteReminder = useDeleteReminder();
 
-  // ── Local UI state (all hooks before any return) ──────────────────
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -38,7 +36,6 @@ const Reminders: React.FC = () => {
     upcomingReminders: reminders.filter(r => r.reminderDate > today).length,
   }), [reminders, today]);
 
-  // ── Handlers ──────────────────────────────────────────────────────
   const onAddReminder = async (r: Partial<Reminder>) => {
     await createReminder({
       title: r.title || 'Untitled',
@@ -344,7 +341,6 @@ const Reminders: React.FC = () => {
           </div>
         </div>
       )}
-      {/* Delete confirmation modal */}
       {deleteTarget && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDeleteTarget(null)} />

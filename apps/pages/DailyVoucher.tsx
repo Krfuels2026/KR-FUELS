@@ -197,7 +197,6 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
 
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <div className="flex flex-col md:flex-row items-stretch gap-5">
-          {/* Date Picker */}
           <div className="flex flex-col justify-center space-y-2 flex-shrink-0">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Transaction Date</label>
             <div
@@ -210,10 +209,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
             </div>
           </div>
 
-          {/* Divider */}
           <div className="hidden md:block w-px bg-slate-100 self-stretch"></div>
 
-          {/* Stats Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
             <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
               <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">Opening Balance</p>

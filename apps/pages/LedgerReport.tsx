@@ -112,7 +112,6 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
 
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
-      {/* Refined Sticky Header Section */}
       <div className="sticky top-0 -mx-5 px-5 pt-0 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
@@ -192,7 +191,6 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none print:rounded-none">
-        {/* Print-only Header */}
         <div className="hidden print:block print-header">
           <h1>KR-FUELS ACCOUNTING</h1>
           <p>LEDGER REPORT: {selectedAccount?.name || 'All Accounts'}</p>

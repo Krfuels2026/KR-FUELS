@@ -1,4 +1,5 @@
 "use node";
+// @ts-nocheck
 
 import { action } from "../_generated/server";
 import bcrypt from "bcryptjs";
