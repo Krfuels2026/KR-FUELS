@@ -190,51 +190,53 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   }, [isDirty]);
 
   return (
-    <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto flex flex-col gap-6 h-full min-h-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Daily Voucher</h1>
-        <div className="hidden md:flex items-center gap-3">
-          {/* controls reserved */}
-        </div>
+    <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto flex flex-col gap-8 h-full min-h-0 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Daily Voucher</h1>
       </div>
 
-      <div className="flex flex-col md:flex-row items-stretch gap-4">
-        {/* Date Picker */}
-        <div className="flex flex-col justify-center space-y-1.5 flex-shrink-0">
-          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-widest block">Transaction Date</label>
-          <div
-            className="flex items-center gap-2.5 cursor-pointer bg-white border border-slate-200 px-4 py-2 rounded-lg hover:border-brand transition-all shadow-sm group"
-            onClick={() => dateInputRef.current?.showPicker()}
-          >
-            <Calendar size={14} className="text-slate-400 group-hover:text-brand transition-colors" />
-            <span className="text-[13px] font-bold text-slate-900 tabular-nums tracking-tight">{formatDateToDDMMYYYY(date)}</span>
-            <input ref={dateInputRef} type="date" className="absolute opacity-0 w-0 h-0" value={date} onChange={e => setDate(e.target.value)} />
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div className="flex flex-col md:flex-row items-stretch gap-5">
+          {/* Date Picker */}
+          <div className="flex flex-col justify-center space-y-2 flex-shrink-0">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Transaction Date</label>
+            <div
+              className="flex items-center gap-3 cursor-pointer bg-slate-50 border border-slate-200 px-5 py-3 rounded-xl hover:border-brand transition-all group"
+              onClick={() => dateInputRef.current?.showPicker()}
+            >
+              <Calendar size={16} className="text-slate-400 group-hover:text-brand transition-colors" />
+              <span className="text-[14px] font-black text-slate-900 tabular-nums tracking-tight">{formatDateToDDMMYYYY(date)}</span>
+              <input ref={dateInputRef} type="date" required className="absolute opacity-0 w-0 h-0 [&::-webkit-clear-button]:hidden [&::-webkit-inner-spin-button]:hidden" value={date} onChange={e => setDate(e.target.value)} />
+            </div>
           </div>
-        </div>
 
-        {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
-          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-slate-400">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Opening Balance</p>
-            <p className="text-[15px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
-              {formatCurrency(Math.abs(openingBalance))}
-              <span className="text-[9px] ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
-            </p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-emerald-500">
-            <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowUpCircle size={10} /> Total Inflows (CR)</p>
-            <p className="text-[15px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">{formatCurrency(totals.credit)}</p>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 border-l-rose-500">
-            <p className="text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1 flex items-center gap-1"><ArrowDownCircle size={10} /> Total Outflows (DR)</p>
-            <p className="text-[15px] font-black text-rose-600 font-mono tabular-nums tracking-tighter leading-none">{formatCurrency(totals.debit)}</p>
-          </div>
-          <div className={`bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm flex flex-col justify-between border-l-4 ${closingBalance >= 0 ? 'border-l-brand' : 'border-l-rose-500'}`}>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1"><Calculator size={10} /> Closing Balance</p>
-            <p className={`text-[15px] font-black font-mono tabular-nums tracking-tighter leading-none ${closingBalance >= 0 ? 'text-brand' : 'text-rose-600'}`}>
-              {formatCurrency(Math.abs(closingBalance))}
-              <span className="text-[9px] ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
-            </p>
+          {/* Divider */}
+          <div className="hidden md:block w-px bg-slate-100 self-stretch"></div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
+            <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
+              <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">Opening Balance</p>
+              <p className="text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
+                {formatCurrency(Math.abs(openingBalance))}
+                <span className="text-[9px] ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
+              </p>
+            </div>
+            <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
+              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Inflow</p>
+              <p className="text-[16px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">+{formatCurrency(totals.credit)}</p>
+            </div>
+            <div className="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
+              <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-2">Total Outflow</p>
+              <p className="text-[16px] font-black text-rose-500 font-mono tabular-nums tracking-tighter leading-none">-{formatCurrency(totals.debit)}</p>
+            </div>
+            <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">Closing Cash</p>
+              <p className="text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
+                {formatCurrency(Math.abs(closingBalance))}
+                <span className="text-[9px] ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -245,7 +247,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-[12px] font-black text-slate-700 uppercase tracking-widest">Entry Lines</h2>
+        </div>
         <div className="overflow-auto flex-1 min-h-0 custom-scrollbar">
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-10">
@@ -310,16 +315,14 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
             </tbody>
           </table>
         </div>
-
-
       </div>
 
-      <div className="pt-2 pb-4 flex items-center justify-center gap-8 no-print flex-shrink-0">
-        <button onClick={handleReset} className="flex items-center gap-2 px-6 py-2 text-[12px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-lg transition-all group"><RotateCcw size={16} className="group-hover:-rotate-90 transition-transform" /> Reset Form</button>
+      <div className="flex items-center justify-center gap-6 no-print flex-shrink-0">
+        <button onClick={handleReset} className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-xl hover:bg-rose-50 transition-all group"><RotateCcw size={15} className="group-hover:-rotate-90 transition-transform" /> Reset</button>
         <button
           onClick={handlePost}
           disabled={!isDirty}
-          className={`px-8 py-3.5 rounded-xl font-bold text-[14px] uppercase tracking-widest transition-all active:scale-95 ${isDirty ? 'bg-brand text-white hover:bg-brand-hover shadow-xl shadow-green-900/10' : 'bg-slate-200 text-slate-500 cursor-not-allowed'}`}
+          className={`px-10 py-3.5 rounded-xl font-bold text-[13px] uppercase tracking-widest transition-all active:scale-95 ${isDirty ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-green-900/15' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
         >
           Post Transactions
         </button>

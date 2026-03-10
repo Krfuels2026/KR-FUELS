@@ -50,6 +50,52 @@
             }
             body {
                 background: white;
+                font-size: 11px !important;
+            }
+            * {
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+            html, body {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            table {
+                font-size: 11px !important;
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+            tfoot {
+                display: table-footer-group;
+            }
+            table th, table td {
+                padding: 6px 12px !important;
+                font-size: 11px !important;
+            }
+            .print-header {
+                text-align: center;
+                margin-bottom: 12px;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            .print-header h1 {
+                font-size: 16px !important;
+                font-weight: 800;
+                margin: 0 0 4px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+            }
+            .print-header p {
+                font-size: 11px !important;
+                color: #64748b;
+                margin: 0;
             }
         }
         .custom-scrollbar::-webkit-scrollbar {

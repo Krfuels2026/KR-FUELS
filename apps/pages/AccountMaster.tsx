@@ -137,7 +137,7 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
       )}
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Ledger Master Registry</h1>
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Account Master</h1>
         <div className="hidden md:flex items-center gap-3">
           {/* reserved for page actions */}
         </div>

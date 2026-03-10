@@ -13,7 +13,8 @@ import {
   UserPlus, 
   Lock,
   Mail,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 
 const Administration: React.FC = () => {
@@ -119,7 +120,7 @@ const Administration: React.FC = () => {
     <div className="animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between border-b border-slate-200 pb-5 mb-8">
         <div>
-          <h1 className="text-[20px] font-black text-slate-900 uppercase tracking-tight">System Administration</h1>
+          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Administration</h1>
         </div>
       </div>
 
@@ -258,8 +259,9 @@ const Administration: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddingBunk(false)} />
           <form onSubmit={handleAddBunk} className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Register New Bunk</h2>
+              <button type="button" onClick={() => setIsAddingBunk(false)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all"><X size={18} /></button>
             </div>
             <div className="p-8 space-y-5">
               <div className="space-y-1.5">
@@ -290,8 +292,9 @@ const Administration: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddingUser(false)} />
           <form onSubmit={handleAddUser} className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Add Admin</h2>
+              <button type="button" onClick={() => setIsAddingUser(false)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all"><X size={18} /></button>
             </div>
             <div className="p-8 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-1.5">

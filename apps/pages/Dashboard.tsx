@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-[1400px] mx-auto pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">
+        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">
           Dashboard <span className="mx-2 text-slate-300 font-normal">/</span> {locationName}
         </h1>
         <div className="flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
@@ -99,16 +99,16 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'OPENING CASH', value: reportData.openingBalance, color: 'text-amber-700', bg: 'bg-amber-50/50', border: 'border-l-amber-500' },
-          { label: 'DAILY INFLOW', value: reportData.totalCr, color: 'text-green-800', bg: 'bg-green-50/50', border: 'border-l-green-700', prefix: '+' },
-          { label: 'DAILY OUTFLOW', value: reportData.totalDr, color: 'text-rose-700', bg: 'bg-rose-50/50', border: 'border-l-rose-500', prefix: '-' },
-          { label: 'CLOSING CASH', value: reportData.closingBalance, color: 'text-blue-700', bg: 'bg-blue-50/50', border: 'border-l-blue-600' }
+          { label: 'OPENING BALANCE', value: reportData.openingBalance, color: 'text-amber-600', border: 'border-l-amber-500' },
+          { label: 'TOTAL INFLOW', value: reportData.totalCr, color: 'text-emerald-600', border: 'border-l-emerald-500', prefix: '+' },
+          { label: 'TOTAL OUTFLOW', value: reportData.totalDr, color: 'text-rose-500', border: 'border-l-rose-500', prefix: '-' },
+          { label: 'CLOSING CASH', value: reportData.closingBalance, color: 'text-blue-600', border: 'border-l-blue-500' }
         ].map((stat, idx) => (
-          <div key={idx} className={`p-6 rounded-2xl border border-slate-200 border-l-[6px] ${stat.bg} ${stat.border} shadow-sm transition-all hover:shadow-md hover:-translate-y-1`}>
-            <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-4 ${stat.color}`}>{stat.label}</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-2xl font-black font-mono tracking-tighter text-slate-900 tabular-nums">{stat.prefix || ''}{formatCurrency(Math.abs(stat.value))}</p>
-              <span className={`text-[10px] font-bold uppercase ${stat.color} opacity-60 ml-0.5`}>{stat.value >= 0 ? 'DR' : 'CR'}</span>
+          <div key={idx} className={`p-5 rounded-xl bg-white border border-slate-200 border-l-4 ${stat.border} shadow-sm transition-all hover:shadow-md`}>
+            <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${stat.color}`}>{stat.label}</p>
+            <div className="flex items-baseline gap-1.5">
+              <p className="text-xl font-black font-mono tracking-tighter tabular-nums text-slate-900">{stat.prefix || ''}{formatCurrency(Math.abs(stat.value))}</p>
+              <span className="text-[9px] font-bold uppercase text-slate-400">{stat.value >= 0 ? 'DR' : 'CR'}</span>
             </div>
           </div>
         ))}
