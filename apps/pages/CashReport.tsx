@@ -288,7 +288,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
       {/* Refined Sticky Header Section */}
-      <div className="sticky top-0 -mx-5 px-5 pt-0 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
+      <div className="sticky top-0 -mx-5 px-5 pt-4 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
             <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Cash Report</h1>
@@ -508,30 +508,30 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-4">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-amber-500 transition-all hover:shadow-md">
-            <p className="text-[11px] font-bold text-amber-600 uppercase tracking-widest mb-2">Opening Balance</p>
-            <p className="text-[18px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-amber-500 transition-all hover:shadow-md">
+            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Opening Balance</p>
+            <p className="text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
               {formatCurrency(Math.abs(reportData.openingBalance))} 
-              <span className="ml-2 text-[10px] text-slate-400 font-bold uppercase">{reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span>
+              <span className="ml-1.5 text-[9px] text-slate-400 font-bold uppercase">{reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span>
             </p>
           </div>
           
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-emerald-500 transition-all hover:shadow-md">
-            <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Inflow</p>
-            <p className="text-[18px] font-black text-emerald-600 font-mono tracking-tight tabular-nums">+{formatCurrency(reportData.totalCr)}</p>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-emerald-500 transition-all hover:shadow-md">
+            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Total Inflow</p>
+            <p className="text-[15px] font-black text-emerald-600 font-mono tracking-tight tabular-nums">+{formatCurrency(reportData.totalCr)}</p>
           </div>
           
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-rose-500 transition-all hover:shadow-md">
-            <p className="text-[11px] font-bold text-rose-600 uppercase tracking-widest mb-2">Total Outflow</p>
-            <p className="text-[18px] font-black text-rose-600 font-mono tracking-tight tabular-nums">-{formatCurrency(reportData.totalDr)}</p>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-rose-500 transition-all hover:shadow-md">
+            <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Total Outflow</p>
+            <p className="text-[15px] font-black text-rose-600 font-mono tracking-tight tabular-nums">-{formatCurrency(reportData.totalDr)}</p>
           </div>
           
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-[6px] border-l-blue-600 transition-all hover:shadow-md">
-            <p className="text-[11px] font-bold text-blue-700 uppercase tracking-widest mb-2">Closing Cash</p>
-            <p className="text-[18px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-600 transition-all hover:shadow-md">
+            <p className="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1">Closing Cash</p>
+            <p className="text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
               {formatCurrency(Math.abs(reportData.closingBalance))} 
-              <span className="ml-2 text-[10px] text-slate-400 font-bold uppercase">{reportData.closingBalance >= 0 ? 'DR' : 'CR'}</span>
+              <span className="ml-1.5 text-[9px] text-slate-400 font-bold uppercase">{reportData.closingBalance >= 0 ? 'DR' : 'CR'}</span>
             </p>
           </div>
         </div>

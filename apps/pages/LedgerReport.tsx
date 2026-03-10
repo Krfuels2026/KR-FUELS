@@ -3,7 +3,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Account, Voucher } from '../types';
 import { calculateLedger, formatCurrency, formatDateToDDMMYYYY } from '../utils';
 import LedgerModalSelector from '../components/LedgerModalSelector';
-import { Printer, FileSpreadsheet, FileText, Calendar } from 'lucide-react';
+import { FileSpreadsheet, FileText, Calendar } from 'lucide-react';
 
 interface LedgerReportProps {
   accounts: Account[];
@@ -77,10 +77,6 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   const totalDr = reportData.reduce((sum, e) => sum + e.debit, 0);
   const totalCr = reportData.reduce((sum, e) => sum + e.credit, 0);
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   const handleExportExcel = () => {
     if (reportData.length === 0) return;
     
@@ -110,6 +106,10 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     document.body.removeChild(link);
   };
 
+  const handlePDF = () => {
+    window.print();
+  };
+
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
       {/* Refined Sticky Header Section */}
@@ -120,19 +120,13 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={handlePrint}
-              className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-slate-50 transition-all shadow-sm uppercase tracking-widest active:scale-95"
-            >
-              <Printer size={16} /> Print
-            </button>
-            <button 
               onClick={handleExportExcel}
               className="px-6 py-2.5 bg-emerald-700 text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-emerald-800 transition-all shadow-md shadow-emerald-100 uppercase tracking-widest active:scale-95"
             >
               <FileSpreadsheet size={16} /> Excel
             </button>
             <button 
-              onClick={handlePrint}
+              onClick={handlePDF}
               className="px-6 py-2.5 bg-brand text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
             >
               <FileText size={16} /> PDF
