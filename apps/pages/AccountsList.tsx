@@ -139,7 +139,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
 
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase leading-none">Ledger Registry</h1>
+          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Accounts List</h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">

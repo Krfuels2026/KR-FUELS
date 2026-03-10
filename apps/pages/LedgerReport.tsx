@@ -14,10 +14,20 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   const fromDateRef = useRef<HTMLInputElement>(null);
   const toDateRef = useRef<HTMLInputElement>(null);
 
-  const [filters, setFilters] = useState({
-    accountId: '',
-    fromDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    toDate: new Date().toISOString().split('T')[0],
+  const getLocalDateStr = (d: Date) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  const [filters, setFilters] = useState(() => {
+    const now = new Date();
+    return {
+      accountId: '',
+      fromDate: getLocalDateStr(new Date(now.getFullYear(), now.getMonth(), 1)),
+      toDate: getLocalDateStr(now),
+    };
   });
 
   const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
@@ -85,8 +95,10 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
-      + `LEDGER REPORT: ${selectedAccount?.name}\n`
-      + `PERIOD: ${formatDateToDDMMYYYY(filters.fromDate)} TO ${formatDateToDDMMYYYY(filters.toDate)}\n\n`
+      + `KR-FUELS ACCOUNTING\n`
+      + `LEDGER REPORT\n`
+      + `${selectedAccount?.name?.toUpperCase()}\n`
+      + `Period: ${formatDateToDDMMYYYY(filters.fromDate)} to ${formatDateToDDMMYYYY(filters.toDate)}\n\n`
       + [header, ...rows].map(e => e.join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
@@ -104,7 +116,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
       <div className="sticky top-0 -mx-5 px-5 pt-0 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h1 className="text-[20px] font-black text-[#0f172a] uppercase tracking-tight">Ledger Report</h1>
+            <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Ledger Report</h1>
           </div>
           <div className="flex gap-2">
             <button 
@@ -185,7 +197,13 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none print:rounded-none">
+        {/* Print-only Header */}
+        <div className="hidden print:block print-header">
+          <h1>KR-FUELS ACCOUNTING</h1>
+          <p>LEDGER REPORT: {selectedAccount?.name || 'All Accounts'}</p>
+          <p>Period: {formatDateToDDMMYYYY(filters.fromDate)} to {formatDateToDDMMYYYY(filters.toDate)}</p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

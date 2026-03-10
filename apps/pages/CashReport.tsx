@@ -323,7 +323,10 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," 
-      + rows.map(e => e.join(",")).join("\n");
+      + `KR-FUELS ACCOUNTING\n`
+      + `CASH REPORT\n`
+      + `Period: ${formatDateToDDMMYYYY(range.from)} to ${formatDateToDDMMYYYY(range.to)}\n\n`
+      + [headers, ...rows].map(e => e.join(",")).join("\n");
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -340,7 +343,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
       <div className="sticky top-0 -mx-5 px-5 pt-0 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex flex-col">
-            <h1 className="text-[20px] font-black text-[#0f172a] uppercase tracking-tight">Statement of Cash</h1>
+            <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Cash Report</h1>
           </div>
           <div className="flex gap-2">
             <button 
@@ -702,7 +705,13 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none mt-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-0 print:shadow-none print:rounded-none mt-4">
+        {/* Print-only Header */}
+        <div className="hidden print:block print-header">
+          <h1>KR-FUELS ACCOUNTING</h1>
+          <p>CASH REPORT</p>
+          <p>Period: {formatDateToDDMMYYYY(range.from)} to {formatDateToDDMMYYYY(range.to)}</p>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
