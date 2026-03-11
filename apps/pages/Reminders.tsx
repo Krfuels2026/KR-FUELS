@@ -95,45 +95,45 @@ const Reminders: React.FC = () => {
 
   return (
     <div className="animate-in fade-in duration-500 max-w-5xl mx-auto pb-10 h-full flex flex-col">
-      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-4 pt-2 pb-4">
-        <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Reminders</h1>
+      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-3 md:space-y-4 pt-2 pb-3 md:pb-4">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2 md:pb-3">
+          <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Reminders</h1>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setOpen(true)} 
-              className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-[10px] flex items-center gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10"
+              className="px-3 py-1.5 md:px-6 md:py-2 bg-brand text-white rounded-xl font-bold text-[8px] md:text-[10px] flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10"
             >
-              <Plus size={14} strokeWidth={3} /> Add Reminder
+              <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} /> Add Reminder
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-blue-200 transition-colors">
-          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
-            <Bell size={18} />
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
+        <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 md:gap-4 group hover:border-blue-200 transition-colors">
+          <div className="w-7 h-7 md:w-10 md:h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center border border-blue-100 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white">
+            <Bell size={14} className="md:w-[18px] md:h-[18px]" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Total Reminders</p>
-            <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.totalReminders}</p>
+            <p className="text-[7px] md:text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Total Reminders</p>
+            <p className="text-[14px] md:text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.totalReminders}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-amber-200 transition-colors">
-          <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center border border-amber-100 shadow-sm transition-all group-hover:bg-amber-600 group-hover:text-white">
-            <AlertCircle size={18} />
+        <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 md:gap-4 group hover:border-amber-200 transition-colors">
+          <div className="w-7 h-7 md:w-10 md:h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center border border-amber-100 shadow-sm transition-all group-hover:bg-amber-600 group-hover:text-white">
+            <AlertCircle size={14} className="md:w-[18px] md:h-[18px]" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Active Now</p>
-            <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.activeReminders}</p>
+            <p className="text-[7px] md:text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Active Now</p>
+            <p className="text-[14px] md:text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.activeReminders}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-slate-300 transition-colors">
-          <div className="w-10 h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm">
-            <Calendar size={18} />
+        <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 md:gap-4 group hover:border-slate-300 transition-colors">
+          <div className="w-7 h-7 md:w-10 md:h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm">
+            <Calendar size={14} className="md:w-[18px] md:h-[18px]" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Upcoming</p>
-            <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.upcomingReminders}</p>
+            <p className="text-[7px] md:text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Upcoming</p>
+            <p className="text-[14px] md:text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.upcomingReminders}</p>
           </div>
         </div>
         </div>

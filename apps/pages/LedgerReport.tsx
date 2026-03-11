@@ -112,28 +112,28 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
 
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
-      <div className="sticky top-0 -mx-5 px-5 pt-0 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="sticky top-0 -mx-5 px-5 pt-0 pb-4 md:pb-6 bg-[#f8fafc] z-10 no-print space-y-4 md:space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex flex-col">
-            <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Ledger Report</h1>
+            <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Ledger Report</h1>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={handleExportExcel}
-              className="px-6 py-2.5 bg-emerald-700 text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-emerald-800 transition-all shadow-md shadow-emerald-100 uppercase tracking-widest active:scale-95"
+              className="px-3 py-2 md:px-6 md:py-2.5 bg-emerald-700 text-white rounded-full font-bold text-[9px] md:text-[11px] flex items-center gap-1.5 md:gap-2 hover:bg-emerald-800 transition-all shadow-md shadow-emerald-100 uppercase tracking-widest active:scale-95"
             >
-              <FileSpreadsheet size={16} /> Excel
+              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Excel
             </button>
             <button 
               onClick={handlePDF}
-              className="px-6 py-2.5 bg-brand text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
+              className="px-3 py-2 md:px-6 md:py-2.5 bg-brand text-white rounded-full font-bold text-[9px] md:text-[11px] flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
             >
-              <FileText size={16} /> PDF
+              <FileText size={14} className="md:w-4 md:h-4" /> PDF
             </button>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-8 py-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-4 py-4 md:px-8 md:py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
             <div className="flex flex-col h-full">
                <LedgerModalSelector

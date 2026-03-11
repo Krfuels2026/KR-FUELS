@@ -7,6 +7,8 @@ import type { Id } from "../convex/_generated/dataModel";
 export const useLogin = () => useAction((api.actions.auth as any).login);
 export const useRegisterUser = () => useAction((api.actions.auth as any).registerUser);
 export const useChangePassword = () => useAction(api.actions.auth.changePassword);
+export const useVerifyToken = () => useAction((api.actions.auth as any).verifyToken);
+export const useRefreshToken = () => useAction((api.actions.auth as any).refreshToken);
 export const useAllUsers = () => useQuery(api.queries.users.getAllUsers);
 
 // ── Reminders ──────────────────────────────────────────────────────

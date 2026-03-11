@@ -135,22 +135,22 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200 pb-6">
-        <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Account Master</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-6 border-b border-slate-200 pb-3 md:pb-6">
+        <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Account Master</h1>
         <div className="hidden md:flex items-center gap-3">
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
-           <BookOpen size={18} className="text-brand" />
-           <h2 className="text-[13px] font-bold text-slate-900 uppercase tracking-widest">Account Details</h2>
+        <div className="px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 flex items-center gap-2 md:gap-3 bg-slate-50/50">
+           <BookOpen size={16} className="md:w-[18px] md:h-[18px] text-brand" />
+           <h2 className="text-[11px] md:text-[13px] font-bold text-slate-900 uppercase tracking-widest">Account Details</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
+        <form onSubmit={handleSubmit} className="p-4 md:p-8 space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 md:gap-y-5">
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Ledger Account Name</label>
+              <label className="text-[9px] md:text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Ledger Account Name</label>
               <input 
                 type="text" 
                 required 
@@ -210,11 +210,11 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
             </div>
           </div>
           
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-center gap-8">
-            <button type="button" onClick={() => setFormData(getInitialFormData())} className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 hover:text-rose-600 transition-colors">
-              <RotateCcw size={14} /> Clear Entry
+          <div className="pt-4 md:pt-6 border-t border-slate-100 flex items-center justify-center gap-4 md:gap-8">
+            <button type="button" onClick={() => setFormData(getInitialFormData())} className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 md:gap-2 hover:text-rose-600 transition-colors">
+              <RotateCcw size={12} className="md:w-[14px] md:h-[14px]" /> Clear Entry
             </button>
-            <button type="submit" className="px-16 py-3.5 bg-brand text-white rounded-xl font-bold text-[14px] uppercase tracking-widest hover:bg-brand-hover shadow-xl shadow-emerald-500/10 transition-all active:scale-95">
+            <button type="submit" className="px-8 py-2.5 md:px-16 md:py-3.5 bg-brand text-white rounded-xl font-bold text-[10px] md:text-[14px] uppercase tracking-widest hover:bg-brand-hover shadow-xl shadow-emerald-500/10 transition-all active:scale-95">
               {isEditing ? 'Save Changes' : 'Register Account'}
             </button>
           </div>

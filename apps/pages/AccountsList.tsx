@@ -137,47 +137,47 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
         confirmLabel="Confirm Delete"
       />
 
-      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-200 pb-3 gap-3">
         <div>
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Accounts List</h1>
+          <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Accounts List</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="relative flex-1 md:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
             <input
               type="text"
-              placeholder="Search by name or group..."
-              className="pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-[10px] font-bold outline-none focus:border-brand transition-all w-56 shadow-sm placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case"
+              placeholder="Search..."
+              className="pl-9 pr-4 py-1.5 rounded-xl bg-white border border-slate-200 text-[10px] font-bold outline-none focus:border-brand transition-all w-full md:w-56 shadow-sm placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
           <button 
             onClick={() => navigate('/account-master')}
-            className="px-6 py-2 bg-brand text-white rounded-xl font-bold text-[10px] flex items-center gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10"
+            className="px-3 py-1.5 md:px-6 md:py-2 bg-brand text-white rounded-xl font-bold text-[8px] md:text-[10px] flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover transition-all uppercase tracking-widest active:scale-95 shadow-lg shadow-emerald-500/10 whitespace-nowrap"
           >
-            <Plus size={14} strokeWidth={3} /> New Ledger
+            <Plus size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} /> New Ledger
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-colors">
-          <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100 shadow-sm transition-all group-hover:bg-brand group-hover:text-white">
-            <Layers size={18} />
+      <div className="grid grid-cols-2 gap-2 md:gap-4">
+        <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 md:gap-4 group hover:border-emerald-200 transition-colors">
+          <div className="w-7 h-7 md:w-10 md:h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-100 shadow-sm transition-all group-hover:bg-brand group-hover:text-white">
+            <Layers size={14} className="md:w-[18px] md:h-[18px]" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Primary Groups</p>
-            <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.groupsCount}</p>
+            <p className="text-[7px] md:text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Primary Groups</p>
+            <p className="text-[14px] md:text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.groupsCount}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-slate-300 transition-colors">
-          <div className="w-10 h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm">
-            <Users2 size={18} />
+        <div className="bg-white p-2 md:p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 md:gap-4 group hover:border-slate-300 transition-colors">
+          <div className="w-7 h-7 md:w-10 md:h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center border border-slate-100 shadow-sm">
+            <Users2 size={14} className="md:w-[18px] md:h-[18px]" />
           </div>
           <div>
-            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Active Ledgers</p>
-            <p className="text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.ledgersCount}</p>
+            <p className="text-[7px] md:text-[9px] font-bold text-slate-600 uppercase tracking-[0.15em] opacity-80 mb-0.5">Active Ledgers</p>
+            <p className="text-[14px] md:text-xl font-bold text-[#0f172a] leading-none tabular-nums">{stats.ledgersCount}</p>
           </div>
         </div>
       </div>

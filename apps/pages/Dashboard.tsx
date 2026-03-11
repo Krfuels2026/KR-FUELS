@@ -97,28 +97,28 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6">
         {[
           { label: 'OPENING BALANCE', value: reportData.openingBalance, color: 'text-amber-600', border: 'border-l-amber-500' },
           { label: 'TOTAL INFLOW', value: reportData.totalCr, color: 'text-emerald-600', border: 'border-l-emerald-500', prefix: '+' },
           { label: 'TOTAL OUTFLOW', value: reportData.totalDr, color: 'text-rose-500', border: 'border-l-rose-500', prefix: '-' },
           { label: 'CLOSING CASH', value: reportData.closingBalance, color: 'text-blue-600', border: 'border-l-blue-500' }
         ].map((stat, idx) => (
-          <div key={idx} className={`p-5 rounded-xl bg-white border border-slate-200 border-l-4 ${stat.border} shadow-sm transition-all hover:shadow-md`}>
-            <p className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${stat.color}`}>{stat.label}</p>
-            <div className="flex items-baseline gap-1.5">
-              <p className="text-xl font-black font-mono tracking-tighter tabular-nums text-slate-900">{stat.prefix || ''}{formatCurrency(Math.abs(stat.value))}</p>
-              <span className="text-[9px] font-bold uppercase text-slate-400">{stat.value >= 0 ? 'DR' : 'CR'}</span>
+          <div key={idx} className={`p-3 md:p-5 rounded-xl bg-white border border-slate-200 border-l-4 ${stat.border} shadow-sm transition-all hover:shadow-md`}>
+            <p className={`text-[8px] md:text-[10px] font-bold uppercase tracking-widest mb-1.5 md:mb-3 ${stat.color}`}>{stat.label}</p>
+            <div className="flex items-baseline gap-1 md:gap-1.5">
+              <p className="text-[14px] md:text-xl font-black font-mono tracking-tighter tabular-nums text-slate-900">{stat.prefix || ''}{formatCurrency(Math.abs(stat.value))}</p>
+              <span className="text-[7px] md:text-[9px] font-bold uppercase text-slate-400">{stat.value >= 0 ? 'DR' : 'CR'}</span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 bg-slate-50/30 flex-shrink-0">
-            <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shadow-sm"><Clock size={18} /></div>
-            <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Recent Activity</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8 items-stretch">
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[350px] md:h-[500px]">
+          <div className="px-3 py-3 md:px-6 md:py-5 border-b border-slate-100 flex items-center gap-2 md:gap-4 bg-slate-50/30 flex-shrink-0">
+            <div className="w-7 h-7 md:w-9 md:h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shadow-sm"><Clock size={16} className="md:w-[18px] md:h-[18px]" /></div>
+            <h2 className="text-[11px] md:text-[14px] font-black text-slate-900 uppercase tracking-widest">Recent Activity</h2>
           </div>
           <div className="overflow-y-auto overflow-x-auto flex-1 custom-scrollbar">
             <table className="w-full text-left">
@@ -148,26 +148,26 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
           </div>
         </div>
 
-        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[500px] h-[500px]">
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={18} /></div>
-              <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Reminders</h2>
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[400px] md:min-h-[500px] h-[400px] md:h-[500px]">
+          <div className="px-3 py-3 md:px-6 md:py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0 flex-wrap gap-2">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="w-7 h-7 md:w-9 md:h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={16} className="md:w-[18px] md:h-[18px]" /></div>
+              <h2 className="text-[11px] md:text-[14px] font-black text-slate-900 uppercase tracking-widest">Reminders</h2>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5">
-                <Zap size={13} className="text-slate-400" />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active</span>
-                <span className="text-[13px] font-black text-slate-800 tabular-nums ml-1">{(reminders || []).filter(r => r.reminderDate <= todayStr && r.dueDate >= todayStr).length}</span>
+            <div className="flex items-center gap-1.5 md:gap-3">
+              <div className="flex items-center gap-1 md:gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 md:px-3 md:py-1.5">
+                <Zap size={11} className="md:w-[13px] md:h-[13px] text-slate-400" />
+                <span className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active</span>
+                <span className="text-[10px] md:text-[13px] font-black text-slate-800 tabular-nums ml-0.5 md:ml-1">{(reminders || []).filter(r => r.reminderDate <= todayStr && r.dueDate >= todayStr).length}</span>
               </div>
-              <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
-                <BarChart3 size={13} className="text-rose-400" />
-                <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Due Today</span>
-                <span className="text-[13px] font-black text-rose-700 tabular-nums ml-1">{(reminders || []).filter(r => r.dueDate === todayStr).length}</span>
+              <div className="flex items-center gap-1 md:gap-1.5 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1 md:px-3 md:py-1.5">
+                <BarChart3 size={11} className="md:w-[13px] md:h-[13px] text-rose-400" />
+                <span className="text-[8px] md:text-[10px] font-bold text-rose-500 uppercase tracking-widest">Due Today</span>
+                <span className="text-[10px] md:text-[13px] font-black text-rose-700 tabular-nums ml-0.5 md:ml-1">{(reminders || []).filter(r => r.dueDate === todayStr).length}</span>
               </div>
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-5 space-y-3 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-3 md:p-5 space-y-2 md:space-y-3 custom-scrollbar">
             {(() => {
               const active = (reminders || []).filter(r => r.reminderDate <= todayStr && r.dueDate >= todayStr);
               // Sort: due today first, then urgent (< 24h), then others; within each group by dueDate asc

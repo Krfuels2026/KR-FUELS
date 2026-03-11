@@ -191,48 +191,48 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
 
   return (
     <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto flex flex-col h-full min-h-0 pb-6">
-      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-6 pt-2 pb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Daily Voucher</h1>
+      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-4 md:space-y-6 pt-2 pb-4 md:pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
+          <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Daily Voucher</h1>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <div className="flex flex-col md:flex-row items-stretch gap-5">
-            <div className="flex flex-col justify-center space-y-2 flex-shrink-0">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Transaction Date</label>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-5">
+          <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-5">
+            <div className="flex flex-col justify-center space-y-1.5 md:space-y-2 flex-shrink-0">
+              <label className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Transaction Date</label>
               <div
-                className="flex items-center gap-3 cursor-pointer bg-slate-50 border border-slate-200 px-5 py-3 rounded-xl hover:border-brand transition-all group"
+                className="flex items-center gap-2 md:gap-3 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-2 md:px-5 md:py-3 rounded-xl hover:border-brand transition-all group"
                 onClick={() => dateInputRef.current?.showPicker()}
               >
-                <Calendar size={16} className="text-slate-400 group-hover:text-brand transition-colors" />
-                <span className="text-[14px] font-black text-slate-900 tabular-nums tracking-tight">{formatDateToDDMMYYYY(date)}</span>
+                <Calendar size={14} className="md:w-4 md:h-4 text-slate-400 group-hover:text-brand transition-colors" />
+                <span className="text-[12px] md:text-[14px] font-black text-slate-900 tabular-nums tracking-tight">{formatDateToDDMMYYYY(date)}</span>
                 <input ref={dateInputRef} type="date" required className="absolute opacity-0 w-0 h-0 [&::-webkit-clear-button]:hidden [&::-webkit-inner-spin-button]:hidden" value={date} onChange={e => setDate(e.target.value)} />
               </div>
             </div>
 
             <div className="hidden md:block w-px bg-slate-100 self-stretch"></div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-              <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-2">Opening Balance</p>
-                <p className="text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 flex-1">
+              <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 md:mb-2">Opening Balance</p>
+                <p className="text-[12px] md:text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
                   {formatCurrency(Math.abs(openingBalance))}
-                  <span className="text-[9px] ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
+                  <span className="text-[7px] md:text-[9px] ml-0.5 md:ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
                 </p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Total Inflow</p>
-                <p className="text-[16px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">+{formatCurrency(totals.credit)}</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1 md:mb-2">Total Inflow</p>
+                <p className="text-[12px] md:text-[16px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">+{formatCurrency(totals.credit)}</p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-2">Total Outflow</p>
-                <p className="text-[16px] font-black text-rose-500 font-mono tabular-nums tracking-tighter leading-none">-{formatCurrency(totals.debit)}</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1 md:mb-2">Total Outflow</p>
+                <p className="text-[12px] md:text-[16px] font-black text-rose-500 font-mono tabular-nums tracking-tighter leading-none">-{formatCurrency(totals.debit)}</p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-xl px-4 py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">Closing Cash</p>
-                <p className="text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
+              <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 md:mb-2">Closing Cash</p>
+                <p className="text-[12px] md:text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
                   {formatCurrency(Math.abs(closingBalance))}
-                  <span className="text-[9px] ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
+                  <span className="text-[7px] md:text-[9px] ml-0.5 md:ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
                 </p>
               </div>
             </div>
@@ -319,12 +319,12 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 no-print flex-shrink-0 mt-4">
-        <button onClick={handleReset} className="flex items-center gap-2 px-5 py-2.5 text-[11px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-xl hover:bg-rose-50 transition-all group"><RotateCcw size={15} className="group-hover:-rotate-90 transition-transform" /> Reset</button>
+      <div className="flex items-center justify-center gap-3 md:gap-6 no-print flex-shrink-0 mt-4">
+        <button onClick={handleReset} className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 text-[9px] md:text-[11px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-xl hover:bg-rose-50 transition-all group"><RotateCcw size={13} className="md:w-[15px] md:h-[15px] group-hover:-rotate-90 transition-transform" /> Reset</button>
         <button
           onClick={handlePost}
           disabled={!isDirty}
-          className={`px-10 py-3.5 rounded-xl font-bold text-[13px] uppercase tracking-widest transition-all active:scale-95 ${isDirty ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-green-900/15' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+          className={`px-6 py-2.5 md:px-10 md:py-3.5 rounded-xl font-bold text-[11px] md:text-[13px] uppercase tracking-widest transition-all active:scale-95 ${isDirty ? 'bg-brand text-white hover:bg-brand-hover shadow-lg shadow-green-900/15' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
         >
           Post Transactions
         </button>
