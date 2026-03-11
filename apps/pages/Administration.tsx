@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
-import { useQuery, useMutation, useAction } from 'convex/react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useAction } from 'convex/react';
 import { api as convexApi } from '../../convex/_generated/api';
+import { getToken } from '../lib/auth';
 import { 
   Building2, 
   Users, 
@@ -29,21 +29,36 @@ const Administration: React.FC = () => {
     accessibleBunkIds: [] as string[]
   });
 
-  const convexUsers = useQuery(convexApi.queries.users.getAllUsers);
-  const allUserBunkAccess = useQuery(convexApi.queries.users.getAllUserBunkAccess);
   const convexBunksRaw = useQuery(convexApi.queries.bunks.getAllBunks);
   const bunks: { id: string; name: string; code: string; location: string }[] = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
 
-  const createBunk = useMutation(convexApi.mutations.bunks.createBunk);
-  const deleteBunk = useMutation(convexApi.mutations.bunks.deleteBunk);
+  const tok = () => getToken() ?? '';
+
+  // Protected action wrappers
+  const createBunkFn = useAction((convexApi.actions as any).data.createBunk);
+  const deleteBunkFn = useAction((convexApi.actions as any).data.deleteBunk);
   const registerUser = useAction((convexApi.actions.auth as any).registerUser);
-  const deleteUser = useMutation(convexApi.mutations.users.deleteUser);
+  const deleteUserFn = useAction((convexApi.actions as any).data.deleteUser);
+
+  // Protected read actions for sensitive user data
+  const getAllUsersFn = useAction((convexApi.actions as any).data.getAllUsers);
+  const getAllUserBunkAccessFn = useAction((convexApi.actions as any).data.getAllUserBunkAccess);
+  const [convexUsers, setConvexUsers] = useState<any[] | null>(null);
+  const [allUserBunkAccess, setAllUserBunkAccess] = useState<any[] | null>(null);
+
+  useEffect(() => {
+    const t = tok();
+    if (!t) return;
+    getAllUsersFn({ token: t }).then(setConvexUsers).catch(console.error);
+    getAllUserBunkAccessFn({ token: t }).then(setAllUserBunkAccess).catch(console.error);
+  }, []);
 
   const handleAddBunk = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBunk.name || !newBunk.code) return;
     try {
-      await createBunk({
+      await createBunkFn({
+        token: tok(),
         name: newBunk.name.toUpperCase(),
         code: newBunk.code.toUpperCase(),
         location: (newBunk.location || '').toUpperCase(),
@@ -58,7 +73,7 @@ const Administration: React.FC = () => {
   const handleDeleteBunk = async (id: string) => {
     if (!confirm("Are you sure? Deleting a bunk will restrict access to its data.")) return;
     try {
-      await deleteBunk({ id: id as any });
+      await deleteBunkFn({ token: tok(), id: id as any });
     } catch (err: any) {
       alert('Failed to delete bunk: ' + (err.message || err));
     }
@@ -69,6 +84,7 @@ const Administration: React.FC = () => {
     if (!newUser.username || !newUser.name || !newUser.password) return;
     try {
       await registerUser({
+        token: tok(),
         username: newUser.username.toLowerCase(),
         password: newUser.password,
         name: newUser.name,
@@ -77,6 +93,12 @@ const Administration: React.FC = () => {
       });
       setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] });
       setIsAddingUser(false);
+      // Refresh user lists
+      const t = tok();
+      if (t) {
+        getAllUsersFn({ token: t }).then(setConvexUsers).catch(console.error);
+        getAllUserBunkAccessFn({ token: t }).then(setAllUserBunkAccess).catch(console.error);
+      }
     } catch (err: any) {
       alert('Failed to create user: ' + (err.message || err));
     }
@@ -85,7 +107,13 @@ const Administration: React.FC = () => {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm(`Remove this user?`)) return;
     try {
-      await deleteUser({ userId: userId as any });
+      await deleteUserFn({ token: tok(), userId: userId as any });
+      // Refresh user lists
+      const t = tok();
+      if (t) {
+        getAllUsersFn({ token: t }).then(setConvexUsers).catch(console.error);
+        getAllUserBunkAccessFn({ token: t }).then(setAllUserBunkAccess).catch(console.error);
+      }
     } catch (err: any) {
       alert('Failed to delete user: ' + (err.message || err));
     }
@@ -311,7 +339,7 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Initial Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="8+ CHARS, A-Z, 0-9" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                    <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
                   </div>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -10,7 +10,7 @@ import { v } from "convex/values";
  * Create a new user
  * Note: Password should already be hashed by the action
  */
-export const createUser = mutation({
+export const createUser = internalMutation({
   args: {
     username: v.string(),
     passwordHash: v.string(),
@@ -44,7 +44,7 @@ export const createUser = mutation({
  * Update user password
  * Note: New password should already be hashed by the action
  */
-export const updatePassword = mutation({
+export const updatePassword = internalMutation({
   args: {
     userId: v.id("users"),
     newPasswordHash: v.string(),
@@ -60,7 +60,7 @@ export const updatePassword = mutation({
 /**
  * Delete user
  */
-export const deleteUser = mutation({
+export const deleteUser = internalMutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     // Delete user's bunk access

@@ -1,8 +1,8 @@
-import { query } from "../_generated/server";
+import { internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 
 // Get failed attempts in last 15 minutes (for rate limiting)
-export const getRecentFailedAttempts = query({
+export const getRecentFailedAttempts = internalQuery({
   args: { username: v.string() },
   handler: async (ctx, args) => {
     const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
@@ -22,7 +22,7 @@ export const getRecentFailedAttempts = query({
 });
 
 // Count consecutive failures since last success
-export const getConsecutiveFailedAttempts = query({
+export const getConsecutiveFailedAttempts = internalQuery({
   args: { username: v.string() },
   handler: async (ctx, args) => {
     const normalizedUsername = args.username.toLowerCase().trim();
@@ -44,7 +44,7 @@ export const getConsecutiveFailedAttempts = query({
 });
 
 // Check if account is locked (5+ consecutive failures in last hour)
-export const isAccountLocked = query({
+export const isAccountLocked = internalQuery({
   args: { username: v.string() },
   handler: async (ctx, args) => {
     const oneHourAgo = Date.now() - 60 * 60 * 1000;

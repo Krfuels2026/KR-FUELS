@@ -1,4 +1,4 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
@@ -9,7 +9,7 @@ import { v } from "convex/values";
 /**
  * Create reminder (replaces POST /api/reminders)
  */
-export const createReminder = mutation({
+export const createReminder = internalMutation({
   args: {
     title: v.string(),
     description: v.string(),
@@ -50,7 +50,7 @@ export const createReminder = mutation({
 /**
  * Update reminder (replaces PATCH /api/reminders/:id)
  */
-export const updateReminder = mutation({
+export const updateReminder = internalMutation({
   args: {
     id: v.id("reminders"),
     title: v.string(),
@@ -95,7 +95,7 @@ export const updateReminder = mutation({
 /**
  * Delete reminder (replaces DELETE /api/reminders/:id)
  */
-export const deleteReminder = mutation({
+export const deleteReminder = internalMutation({
   args: {
     id: v.id("reminders"),
   },

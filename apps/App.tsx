@@ -11,11 +11,10 @@ import Reminders from './pages/Reminders';
 import Login from './pages/Login';
 import Administration from './pages/Administration';
 import { Account, Voucher, Bunk, User } from './types';
-import { getStoredUser, setStoredUser } from './lib/storage';
-import { clearAuthData, isAuthenticated, getStoredUser as getAuthUser, isTokenExpired } from './lib/auth';
+import { clearAuthData, isAuthenticated, getStoredUser as getAuthUser, isTokenExpired, getToken } from './lib/auth';
 import { useIdleLogout } from './hooks/useIdleLogout';
 import { useAuthGuard } from './hooks/useAuthGuard';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useAction } from 'convex/react';
 import { api as convexApi } from '../convex/_generated/api';
 
 const isValidId = (v?: string) => !!v && v.trim().length > 0;
@@ -26,12 +25,21 @@ const App: React.FC = () => {
   const convexVouchers = useQuery(convexApi.queries.vouchers.getAllVouchers);
   const convexReminders = useQuery(convexApi.queries.reminders.getAllReminders);
 
-  const convexCreateAccount = useMutation(convexApi.mutations.accounts.createAccount);
-  const convexUpdateAccount = useMutation(convexApi.mutations.accounts.updateAccount);
-  const convexDeleteAccount = useMutation(convexApi.mutations.accounts.deleteAccount);
-  const convexCreateVoucher = useMutation(convexApi.mutations.vouchers.createVoucher);
-  const convexUpdateVoucher = useMutation(convexApi.mutations.vouchers.updateVoucher);
-  const convexDeleteVoucher = useMutation(convexApi.mutations.vouchers.deleteVoucher);
+  const convexCreateAccountFn = useAction((convexApi.actions as any).data.createAccount);
+  const convexUpdateAccountFn = useAction((convexApi.actions as any).data.updateAccount);
+  const convexDeleteAccountFn = useAction((convexApi.actions as any).data.deleteAccount);
+  const convexCreateVoucherFn = useAction((convexApi.actions as any).data.createVoucher);
+  const convexUpdateVoucherFn = useAction((convexApi.actions as any).data.updateVoucher);
+  const convexDeleteVoucherFn = useAction((convexApi.actions as any).data.deleteVoucher);
+
+  // Wrap each action to auto-inject the session token
+  const tok = () => getToken() ?? '';
+  const convexCreateAccount = (args: any) => convexCreateAccountFn({ token: tok(), ...args });
+  const convexUpdateAccount = (args: any) => convexUpdateAccountFn({ token: tok(), ...args });
+  const convexDeleteAccount = (args: any) => convexDeleteAccountFn({ token: tok(), ...args });
+  const convexCreateVoucher = (args: any) => convexCreateVoucherFn({ token: tok(), ...args });
+  const convexUpdateVoucher = (args: any) => convexUpdateVoucherFn({ token: tok(), ...args });
+  const convexDeleteVoucher = (args: any) => convexDeleteVoucherFn({ token: tok(), ...args });
 
   const [bunks, setBunks] = useState<Bunk[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -50,13 +58,12 @@ const App: React.FC = () => {
         };
       }
     }
-    // Fall back to legacy storage
-    return getStoredUser<User>();
+    return null;
   });
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
-    clearAuthData(); // Clear JWT token and user data
+    clearAuthData();
   }, []);
 
   useIdleLogout(handleLogout);
@@ -105,7 +112,6 @@ const App: React.FC = () => {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    setStoredUser(user);
   };
 
   useEffect(() => {

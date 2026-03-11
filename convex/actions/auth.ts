@@ -1,11 +1,10 @@
 "use node";
-// @ts-nocheck
 
 import { action } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { v } from "convex/values";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { api } from "../_generated/api";
 
 // Security Configuration
 const JWT_EXPIRY = "24h";
@@ -36,14 +35,14 @@ export const login = action({
   handler: async (ctx, args) => {
     const normalizedUsername = args.username.toLowerCase().trim();
 
-    const lockStatus = await ctx.runQuery(api.queries.loginAttempts.isAccountLocked, {
+    const lockStatus = await ctx.runQuery(internal.queries.loginAttempts.isAccountLocked, {
       username: normalizedUsername,
     });
     if (lockStatus.locked) {
       throw new Error(`Account locked. Try again after ${lockStatus.unlockTime}`);
     }
 
-    const recentAttempts = await ctx.runQuery(api.queries.loginAttempts.getRecentFailedAttempts, {
+    const recentAttempts = await ctx.runQuery(internal.queries.loginAttempts.getRecentFailedAttempts, {
       username: normalizedUsername,
     });
     const oneMinuteAgo = Date.now() - RATE_LIMIT_WINDOW_MS;
@@ -52,12 +51,12 @@ export const login = action({
       throw new Error("Too many login attempts. Please wait 1 minute.");
     }
 
-    const user = await ctx.runQuery(api.queries.users.getUserByUsername, {
+    const user = await ctx.runQuery(internal.queries.users.getUserByUsername, {
       username: args.username,
     });
 
     if (!user) {
-      await ctx.runMutation(api.mutations.loginAttempts.recordAttempt, {
+      await ctx.runMutation(internal.mutations.loginAttempts.recordAttempt, {
         username: normalizedUsername,
         success: false,
       });
@@ -66,19 +65,19 @@ export const login = action({
 
     const validPassword = await bcrypt.compare(args.password, user.passwordHash);
     if (!validPassword) {
-      await ctx.runMutation(api.mutations.loginAttempts.recordAttempt, {
+      await ctx.runMutation(internal.mutations.loginAttempts.recordAttempt, {
         username: normalizedUsername,
         success: false,
       });
       throw new Error("Invalid username or password");
     }
 
-    await ctx.runMutation(api.mutations.loginAttempts.recordAttempt, {
+    await ctx.runMutation(internal.mutations.loginAttempts.recordAttempt, {
       username: normalizedUsername,
       success: true,
     });
 
-    const accessibleBunks = await ctx.runQuery(api.queries.users.getUserBunks, {
+    const accessibleBunks = await ctx.runQuery(internal.queries.users.getUserBunks, {
       userId: user._id,
     });
     const accessibleBunkIds = accessibleBunks.map((ab: any) => ab.bunkId);
@@ -101,9 +100,10 @@ export const login = action({
   },
 });
 
-// Register new user with password complexity enforcement
+// Register new user with password complexity enforcement (requires super_admin)
 export const registerUser = action({
   args: {
+    token: v.string(),
     username: v.string(),
     password: v.string(),
     name: v.string(),
@@ -111,7 +111,11 @@ export const registerUser = action({
     accessibleBunkIds: v.array(v.id("bunks")),
   },
   handler: async (ctx, args) => {
-    const existing = await ctx.runQuery(api.queries.users.getUserByUsername, {
+    // Only super_admin can register new users
+    const decoded = jwt.verify(args.token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] }) as { role: string };
+    if (decoded.role !== "super_admin") throw new Error("Only super_admin can register users");
+
+    const existing = await ctx.runQuery(internal.queries.users.getUserByUsername, {
       username: args.username,
     });
     if (existing) throw new Error("Username already exists");
@@ -119,9 +123,9 @@ export const registerUser = action({
     const passwordCheck = validatePasswordComplexity(args.password);
     if (!passwordCheck.valid) throw new Error(passwordCheck.message);
 
-    const passwordHash = await bcrypt.hash(args.password, 10);
+    const passwordHash = await bcrypt.hash(args.password, 12);
 
-    const userId = await ctx.runMutation(api.mutations.users.createUser, {
+    const userId = await ctx.runMutation(internal.mutations.users.createUser, {
       username: args.username.trim(),
       passwordHash,
       name: args.name.trim(),
@@ -141,7 +145,7 @@ export const changePassword = action({
     newPassword: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.runQuery(api.queries.users.getUserById, {
+    const user = await ctx.runQuery(internal.queries.users.getUserById, {
       userId: args.userId,
     });
     if (!user) throw new Error("User not found");
@@ -152,8 +156,8 @@ export const changePassword = action({
     const passwordCheck = validatePasswordComplexity(args.newPassword);
     if (!passwordCheck.valid) throw new Error(passwordCheck.message);
 
-    const newPasswordHash = await bcrypt.hash(args.newPassword, 10);
-    await ctx.runMutation(api.mutations.users.updatePassword, {
+    const newPasswordHash = await bcrypt.hash(args.newPassword, 12);
+    await ctx.runMutation(internal.mutations.users.updatePassword, {
       userId: args.userId,
       newPasswordHash,
     });
@@ -171,12 +175,12 @@ export const verifyToken = action({
         algorithms: [JWT_ALGORITHM],
       }) as { userId: string; username: string; role: string; iat: number; exp: number };
 
-      const user = await ctx.runQuery(api.queries.users.getUserByUsername, {
+      const user = await ctx.runQuery(internal.queries.users.getUserByUsername, {
         username: decoded.username,
       });
       if (!user) return { valid: false, error: "User not found", expired: false };
 
-      const accessibleBunks = await ctx.runQuery(api.queries.users.getUserBunks, {
+      const accessibleBunks = await ctx.runQuery(internal.queries.users.getUserBunks, {
         userId: user._id,
       });
       const accessibleBunkIds = accessibleBunks.map((ab: any) => ab.bunkId);
@@ -202,7 +206,7 @@ export const refreshToken = action({
         algorithms: [JWT_ALGORITHM],
       }) as { userId: string; username: string; role: string };
 
-      const user = await ctx.runQuery(api.queries.users.getUserByUsername, {
+      const user = await ctx.runQuery(internal.queries.users.getUserByUsername, {
         username: decoded.username,
       });
       if (!user) throw new Error("User no longer exists");

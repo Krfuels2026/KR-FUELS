@@ -1,7 +1,7 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
-export const createVoucher = mutation({
+export const createVoucher = internalMutation({
   args: {
     txnDate: v.string(),
     accountId: v.id("accounts"),
@@ -23,7 +23,7 @@ export const createVoucher = mutation({
   },
 });
 
-export const updateVoucher = mutation({
+export const updateVoucher = internalMutation({
   args: {
     id: v.id("vouchers"),
     txnDate: v.string(),
@@ -46,7 +46,7 @@ export const updateVoucher = mutation({
   },
 });
 
-export const deleteVoucher = mutation({
+export const deleteVoucher = internalMutation({
   args: { id: v.id("vouchers") },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);

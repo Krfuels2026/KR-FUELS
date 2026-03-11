@@ -1,8 +1,8 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
 // Record login attempt
-export const recordAttempt = mutation({
+export const recordAttempt = internalMutation({
   args: {
     username: v.string(),
     success: v.boolean(),
@@ -19,7 +19,7 @@ export const recordAttempt = mutation({
 });
 
 // Cleanup attempts older than 24h
-export const cleanupOldAttempts = mutation({
+export const cleanupOldAttempts = internalMutation({
   handler: async (ctx) => {
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
     const oldAttempts = await ctx.db
