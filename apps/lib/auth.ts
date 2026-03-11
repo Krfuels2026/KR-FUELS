@@ -16,17 +16,17 @@ export function storeAuthData(token: string, user: StoredUser, expiresIn: string
   const expiryMs = parseExpiryToMs(expiresIn);
   const expiryTime = Date.now() + expiryMs;
   
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
-  localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
+  sessionStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  sessionStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
 }
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return sessionStorage.getItem(TOKEN_KEY);
 }
 
 export function getStoredUser(): StoredUser | null {
-  const userJson = localStorage.getItem(USER_KEY);
+  const userJson = sessionStorage.getItem(USER_KEY);
   if (!userJson) return null;
   try {
     return JSON.parse(userJson);
@@ -36,14 +36,14 @@ export function getStoredUser(): StoredUser | null {
 }
 
 export function isTokenExpired(): boolean {
-  const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  const expiryStr = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
   if (!expiryStr) return true;
   const expiry = parseInt(expiryStr, 10);
   return Date.now() > (expiry - 5 * 60 * 1000); // 5 min buffer
 }
 
 export function shouldRefreshToken(): boolean {
-  const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  const expiryStr = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
   if (!expiryStr) return false;
   const expiry = parseInt(expiryStr, 10);
   const oneHourFromNow = Date.now() + (60 * 60 * 1000);
@@ -51,10 +51,10 @@ export function shouldRefreshToken(): boolean {
 }
 
 export function clearAuthData(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_EXPIRY_KEY);
-  localStorage.removeItem('kr_fuels_user_id');
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_KEY);
+  sessionStorage.removeItem(TOKEN_EXPIRY_KEY);
+  sessionStorage.removeItem('kr_fuels_user_id');
 }
 
 export function isAuthenticated(): boolean {
@@ -75,7 +75,7 @@ function parseExpiryToMs(expiry: string): number {
 }
 
 export function getTimeUntilExpiry(): string {
-  const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  const expiryStr = sessionStorage.getItem(TOKEN_EXPIRY_KEY);
   if (!expiryStr) return 'Unknown';
   const expiry = parseInt(expiryStr, 10);
   const remaining = expiry - Date.now();

@@ -1,7 +1,7 @@
-import { query } from "../_generated/server";
+import { internalQuery } from "../_generated/server";
 import { v } from "convex/values";
 
-export const getUserByUsername = query({
+export const getUserByUsername = internalQuery({
   args: { username: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -11,14 +11,14 @@ export const getUserByUsername = query({
   },
 });
 
-export const getUserById = query({
+export const getUserById = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.userId);
   },
 });
 
-export const getUserBunks = query({
+export const getUserBunks = internalQuery({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -28,13 +28,14 @@ export const getUserBunks = query({
   },
 });
 
-export const getAllUsers = query({
+export const getAllUsers = internalQuery({
   handler: async (ctx) => {
-    return await ctx.db.query("users").collect();
+    const users = await ctx.db.query("users").collect();
+    return users.map(({ passwordHash, ...user }) => user);
   },
 });
 
-export const getAllUserBunkAccess = query({
+export const getAllUserBunkAccess = internalQuery({
   handler: async (ctx) => {
     return await ctx.db.query("userBunkAccess").collect();
   },

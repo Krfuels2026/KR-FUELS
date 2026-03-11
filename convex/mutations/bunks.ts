@@ -1,7 +1,7 @@
-import { mutation } from "../_generated/server";
+import { internalMutation } from "../_generated/server";
 import { v } from "convex/values";
 
-export const createBunk = mutation({
+export const createBunk = internalMutation({
   args: {
     name: v.string(),
     code: v.string(),
@@ -17,7 +17,7 @@ export const createBunk = mutation({
   },
 });
 
-export const deleteBunk = mutation({
+export const deleteBunk = internalMutation({
   args: { id: v.id("bunks") },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);
