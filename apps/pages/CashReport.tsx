@@ -288,28 +288,28 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   return (
     <div className="w-full mx-auto pb-10 max-w-[1400px]">
       <div className="sticky top-0 -mx-5 px-5 pt-4 pb-6 bg-[#f8fafc] z-10 no-print space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex flex-col">
-            <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Cash Report</h1>
+            <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Cash Report</h1>
           </div>
           <div className="flex gap-2">
             <button 
               onClick={handleExportExcel}
-              className="px-6 py-2.5 bg-emerald-700 text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-emerald-800 transition-all shadow-md shadow-emerald-100 uppercase tracking-widest active:scale-95"
+              className="px-3 py-2 md:px-6 md:py-2.5 bg-emerald-700 text-white rounded-full font-bold text-[9px] md:text-[11px] flex items-center gap-1.5 md:gap-2 hover:bg-emerald-800 transition-all shadow-md shadow-emerald-100 uppercase tracking-widest active:scale-95"
             >
-              <FileSpreadsheet size={16} /> Excel
+              <FileSpreadsheet size={14} className="md:w-4 md:h-4" /> Excel
             </button>
             <button 
               onClick={() => window.print()}
-              className="px-6 py-2.5 bg-brand text-white rounded-full font-bold text-[11px] flex items-center gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
+              className="px-3 py-2 md:px-6 md:py-2.5 bg-brand text-white rounded-full font-bold text-[9px] md:text-[11px] flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover transition-all shadow-md shadow-green-100 uppercase tracking-widest active:scale-95"
             >
-              <FileText size={16} /> PDF
+              <FileText size={14} className="md:w-4 md:h-4" /> PDF
             </button>
           </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-1.5 flex border-b border-slate-100 bg-slate-50/30">
+          <div className="p-1 md:p-1.5 flex border-b border-slate-100 bg-slate-50/30 overflow-x-auto">
             {[
               { id: 'daily', label: 'Daily', icon: Calendar },
               { id: 'monthly', label: 'Monthly', icon: CalendarDays },
@@ -327,9 +327,9 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
                     setShowFilterPopup(false);
                   }
                 }}
-                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all ${filterType === btn.id ? 'bg-brand text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
+                className={`flex-1 min-w-fit flex items-center justify-center gap-1.5 md:gap-2.5 px-2 md:px-3 py-2 md:py-3 rounded-xl text-[9px] md:text-[11px] font-bold uppercase tracking-wider md:tracking-widest transition-all ${filterType === btn.id ? 'bg-brand text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}
               >
-                <btn.icon size={15} /> {btn.label}
+                <btn.icon size={13} className="md:w-[15px] md:h-[15px] flex-shrink-0" /> <span className="whitespace-nowrap">{btn.label}</span>
               </button>
             ))}
           </div>
@@ -502,30 +502,30 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-amber-500 transition-all hover:shadow-md">
-            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Opening Balance</p>
-            <p className="text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-4">
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-amber-500 transition-all hover:shadow-md">
+            <p className="text-[8px] md:text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Opening Balance</p>
+            <p className="text-[13px] md:text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
               {formatCurrency(Math.abs(reportData.openingBalance))} 
-              <span className="ml-1.5 text-[9px] text-slate-400 font-bold uppercase">{reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span>
+              <span className="ml-1 md:ml-1.5 text-[8px] md:text-[9px] text-slate-400 font-bold uppercase">{reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span>
             </p>
           </div>
           
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-emerald-500 transition-all hover:shadow-md">
-            <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Total Inflow</p>
-            <p className="text-[15px] font-black text-emerald-600 font-mono tracking-tight tabular-nums">+{formatCurrency(reportData.totalCr)}</p>
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-emerald-500 transition-all hover:shadow-md">
+            <p className="text-[8px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Total Inflow</p>
+            <p className="text-[13px] md:text-[15px] font-black text-emerald-600 font-mono tracking-tight tabular-nums">+{formatCurrency(reportData.totalCr)}</p>
           </div>
           
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-rose-500 transition-all hover:shadow-md">
-            <p className="text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Total Outflow</p>
-            <p className="text-[15px] font-black text-rose-600 font-mono tracking-tight tabular-nums">-{formatCurrency(reportData.totalDr)}</p>
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-rose-500 transition-all hover:shadow-md">
+            <p className="text-[8px] md:text-[10px] font-bold text-rose-600 uppercase tracking-widest mb-1">Total Outflow</p>
+            <p className="text-[13px] md:text-[15px] font-black text-rose-600 font-mono tracking-tight tabular-nums">-{formatCurrency(reportData.totalDr)}</p>
           </div>
           
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-600 transition-all hover:shadow-md">
-            <p className="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1">Closing Cash</p>
-            <p className="text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
+          <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm border-l-[4px] border-l-blue-600 transition-all hover:shadow-md">
+            <p className="text-[8px] md:text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-1">Closing Cash</p>
+            <p className="text-[13px] md:text-[15px] font-black text-slate-900 font-mono tracking-tight tabular-nums">
               {formatCurrency(Math.abs(reportData.closingBalance))} 
-              <span className="ml-1.5 text-[9px] text-slate-400 font-bold uppercase">{reportData.closingBalance >= 0 ? 'DR' : 'CR'}</span>
+              <span className="ml-1 md:ml-1.5 text-[8px] md:text-[9px] text-slate-400 font-bold uppercase">{reportData.closingBalance >= 0 ? 'DR' : 'CR'}</span>
             </p>
           </div>
         </div>

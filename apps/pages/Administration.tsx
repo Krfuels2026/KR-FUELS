@@ -115,34 +115,34 @@ const Administration: React.FC = () => {
 
   return (
     <div className="animate-in fade-in duration-500 pb-20">
-      <div className="flex items-center justify-between border-b border-slate-200 pb-5 mb-8">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3 md:pb-5 mb-4 md:mb-8">
         <div>
-          <h1 className="text-[18px] font-black text-slate-900 tracking-tight uppercase">Administration</h1>
+          <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Administration</h1>
         </div>
       </div>
 
-      <div className="flex gap-1 bg-slate-100 p-1.5 rounded-2xl w-fit mb-8 shadow-inner">
+      <div className="flex gap-1 bg-slate-100 p-1 md:p-1.5 rounded-2xl w-fit mb-4 md:mb-8 shadow-inner">
         <button 
           onClick={() => setActiveTab('bunks')}
-          className={`px-8 py-2.5 rounded-xl font-bold text-[12px] uppercase tracking-widest transition-all flex items-center gap-2.5 ${activeTab === 'bunks' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+          className={`px-4 py-2 md:px-8 md:py-2.5 rounded-xl font-bold text-[10px] md:text-[12px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2.5 ${activeTab === 'bunks' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
         >
-          <Building2 size={16} /> Fuel Stations
+          <Building2 size={14} className="md:w-4 md:h-4" /> Fuel Stations
         </button>
         <button 
           onClick={() => setActiveTab('users')}
-          className={`px-8 py-2.5 rounded-xl font-bold text-[12px] uppercase tracking-widest transition-all flex items-center gap-2.5 ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+          className={`px-4 py-2 md:px-8 md:py-2.5 rounded-xl font-bold text-[10px] md:text-[12px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2.5 ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
         >
-          <Users size={16} /> Admin Users
+          <Users size={14} className="md:w-4 md:h-4" /> Admin Users
         </button>
       </div>
 
       {activeTab === 'bunks' && (
-        <div className="space-y-6">
-          <div className="flex justify-between items-center px-1">
-            <h2 className="text-[14px] font-black text-slate-800 uppercase tracking-widest">Active Station List</h2>
+        <div className="space-y-4 md:space-y-6">
+          <div className="flex justify-between items-center px-1 flex-wrap gap-2">
+            <h2 className="text-[11px] md:text-[14px] font-black text-slate-800 uppercase tracking-widest">Active Station List</h2>
             <button 
               onClick={() => setIsAddingBunk(true)}
-              className="px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
+              className="px-3 py-2 md:px-6 md:py-2.5 bg-brand text-white rounded-xl font-bold text-[9px] md:text-[11px] uppercase tracking-widest flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
             >
               <Plus size={16} strokeWidth={3} /> Add New Bunk
             </button>
