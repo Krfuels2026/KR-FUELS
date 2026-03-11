@@ -115,7 +115,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
           <div className="px-6 py-5 border-b border-slate-100 flex items-center gap-4 bg-slate-50/30 flex-shrink-0">
             <div className="w-9 h-9 bg-brand/10 text-brand rounded-xl flex items-center justify-center shadow-sm"><Clock size={18} /></div>
             <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Recent Activity</h2>
@@ -148,7 +148,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
           </div>
         </div>
 
-        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[500px] h-[500px]">
+        <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[500px] h-[500px]">
           <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center shadow-sm"><Activity size={18} /></div>
