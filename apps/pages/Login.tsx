@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Lock, Mail, LogIn, AlertCircle, Fuel, BarChart3, ShieldCheck } from 'lucide-react';
 import { User } from '../types';
 import { useLogin } from '../convex-api';
+import { storeAuthData } from '../lib/auth';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -32,12 +33,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setError('');
     setIsLoading(true);
     try {
-      // Call Convex login action
+      // Call Convex login action (returns JWT token)
       const userData = await login({ username, password });
       
-      // Store user data in localStorage
-      localStorage.setItem('kr_fuels_token', userData.token);
-      localStorage.setItem('kr_fuels_user_id', userData.id);
+      // Store JWT token and user data securely
+      storeAuthData(
+        userData.token,
+        {
+          id: userData.id,
+          username: userData.username,
+          name: userData.name,
+          role: userData.role,
+          accessibleBunkIds: userData.accessibleBunkIds,
+        },
+        userData.expiresIn || '24h'
+      );
       
       // Convert Convex user data to app User type
       const user: User = {

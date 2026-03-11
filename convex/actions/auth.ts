@@ -4,12 +4,25 @@
 import { action } from "../_generated/server";
 import { v } from "convex/values";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { api } from "../_generated/api";
 
 /**
- * Authentication Actions (Simple Login for 4 users)
- * Uses Node.js runtime for bcrypt password hashing
+ * Authentication Actions with JWT
+ * Uses Node.js runtime for bcrypt password hashing and JWT token generation
+ * Token expiry: 24 hours
  */
+
+const JWT_EXPIRY = "24h"; // Token expires in 24 hours
+
+// Helper to get JWT secret from environment
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable not set");
+  }
+  return secret;
+}
 
 /**
  * Login with username and password
@@ -43,14 +56,26 @@ export const login = action({
 
     const accessibleBunkIds = accessibleBunks.map((ab: any) => ab.bunkId);
 
-    // Return user data (no passwords!)
+    // Generate JWT token
+    const tokenPayload = {
+      userId: user._id,
+      username: user.username,
+      role: user.role,
+    };
+    
+    const token = jwt.sign(tokenPayload, getJwtSecret(), {
+      expiresIn: JWT_EXPIRY,
+    });
+
+    // Return user data with JWT token
     return {
       id: user._id,
       username: user.username,
       name: user.name,
       role: user.role,
       accessibleBunkIds,
-      token: user._id, // Simple token = user ID
+      token, // Secure JWT token
+      expiresIn: JWT_EXPIRY,
     };
   },
 });
@@ -143,5 +168,98 @@ export const changePassword = action({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Verify JWT token and return user data
+ * Use this to validate tokens on protected routes
+ */
+export const verifyToken = action({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Verify and decode the token
+      const decoded = jwt.verify(args.token, getJwtSecret()) as {
+        userId: string;
+        username: string;
+        role: string;
+        iat: number;
+        exp: number;
+      };
+
+      // Get fresh user data from database
+      const user = await ctx.runQuery(api.queries.users.getUserByUsername, {
+        username: decoded.username,
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Get user's accessible bunks
+      const accessibleBunks = await ctx.runQuery(api.queries.users.getUserBunks, {
+        userId: user._id,
+      });
+
+      const accessibleBunkIds = accessibleBunks.map((ab: any) => ab.bunkId);
+
+      return {
+        valid: true,
+        user: {
+          id: user._id,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          accessibleBunkIds,
+        },
+        expiresAt: new Date(decoded.exp * 1000).toISOString(),
+      };
+    } catch (error: any) {
+      if (error.name === "TokenExpiredError") {
+        return { valid: false, error: "Token expired", expired: true };
+      }
+      return { valid: false, error: "Invalid token", expired: false };
+    }
+  },
+});
+
+/**
+ * Refresh token - get a new token if current one is still valid
+ */
+export const refreshToken = action({
+  args: {
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      // Verify current token
+      const decoded = jwt.verify(args.token, getJwtSecret()) as {
+        userId: string;
+        username: string;
+        role: string;
+      };
+
+      // Generate new token with fresh expiry
+      const newToken = jwt.sign(
+        {
+          userId: decoded.userId,
+          username: decoded.username,
+          role: decoded.role,
+        },
+        getJwtSecret(),
+        { expiresIn: JWT_EXPIRY }
+      );
+
+      return {
+        success: true,
+        token: newToken,
+        expiresIn: JWT_EXPIRY,
+      };
+    } catch (error: any) {
+      throw new Error("Cannot refresh - token invalid or expired");
+    }
   },
 });

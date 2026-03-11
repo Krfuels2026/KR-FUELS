@@ -11,7 +11,8 @@ import Reminders from './pages/Reminders';
 import Login from './pages/Login';
 import Administration from './pages/Administration';
 import { Account, Voucher, Bunk, User } from './types';
-import { getStoredUser, setStoredUser, clearStoredUser } from './lib/storage';
+import { getStoredUser, setStoredUser } from './lib/storage';
+import { clearAuthData, isAuthenticated, getStoredUser as getAuthUser, isTokenExpired } from './lib/auth';
 import { useIdleLogout } from './hooks/useIdleLogout';
 import { useQuery, useMutation } from 'convex/react';
 import { api as convexApi } from '../convex/_generated/api';
@@ -35,14 +36,48 @@ const App: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredUser<User>());
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    // Check JWT token validity on app load
+    if (isAuthenticated()) {
+      const authUser = getAuthUser();
+      if (authUser) {
+        return {
+          username: authUser.username,
+          name: authUser.name,
+          role: authUser.role,
+          accessibleBunkIds: authUser.accessibleBunkIds,
+        };
+      }
+    }
+    // Fall back to legacy storage
+    return getStoredUser<User>();
+  });
 
   const handleLogout = useCallback(() => {
     setCurrentUser(null);
-    clearStoredUser();
+    clearAuthData(); // Clear JWT token and user data
   }, []);
 
   useIdleLogout(handleLogout);
+
+  // Check token expiry every minute and auto-logout if expired
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    const checkTokenExpiry = () => {
+      if (isTokenExpired()) {
+        console.log('JWT token expired, logging out...');
+        handleLogout();
+      }
+    };
+    
+    // Check immediately
+    checkTokenExpiry();
+    
+    // Check every minute
+    const interval = setInterval(checkTokenExpiry, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [currentUser, handleLogout]);
 
   const availableBunks = useMemo(() => {
     if (!currentUser) return [];
