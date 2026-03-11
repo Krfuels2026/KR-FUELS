@@ -296,7 +296,7 @@ const Administration: React.FC = () => {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Staff Display Name</label>
                 <div className="relative">
                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                   <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. VIJAY" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                   <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="ARUN" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -304,14 +304,14 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. KR_ADMIN_01" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
+                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. ARUN_ADMIN" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Initial Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 6 CHARACTERS" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="8+ CHARS, A-Z, 0-9" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
                   </div>
                 </div>
               </div>
