@@ -14,6 +14,7 @@ import { Account, Voucher, Bunk, User } from './types';
 import { getStoredUser, setStoredUser } from './lib/storage';
 import { clearAuthData, isAuthenticated, getStoredUser as getAuthUser, isTokenExpired } from './lib/auth';
 import { useIdleLogout } from './hooks/useIdleLogout';
+import { useAuthGuard } from './hooks/useAuthGuard';
 import { useQuery, useMutation } from 'convex/react';
 import { api as convexApi } from '../convex/_generated/api';
 
@@ -59,6 +60,9 @@ const App: React.FC = () => {
   }, []);
 
   useIdleLogout(handleLogout);
+
+  // Server-side auth verification (verifies JWT with backend)
+  useAuthGuard(handleLogout);
 
   // Check token expiry every minute and auto-logout if expired
   useEffect(() => {

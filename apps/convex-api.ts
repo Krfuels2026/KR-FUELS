@@ -11,6 +11,11 @@ export const useVerifyToken = () => useAction((api.actions.auth as any).verifyTo
 export const useRefreshToken = () => useAction((api.actions.auth as any).refreshToken);
 export const useAllUsers = () => useQuery(api.queries.users.getAllUsers);
 
+// ── Auth Middleware (Server-side token verification) ────────────────
+
+export const useVerifyAuth = () => useAction((api.actions.authMiddleware as any).verifyAuth);
+export const useVerifyRole = () => useAction((api.actions.authMiddleware as any).verifyRole);
+
 // ── Reminders ──────────────────────────────────────────────────────
 
 export const useReminders = () => useQuery(api.queries.reminders.getAllReminders);

@@ -81,4 +81,16 @@ export default defineSchema({
   })
     .index("by_due_date", ["dueDate"])
     .index("by_reminder_date", ["reminderDate"]),
+
+  // ──────────────────────────────────────────────────
+  // 7. LOGIN_ATTEMPTS — Security: Rate Limiting & Lockout
+  // ──────────────────────────────────────────────────
+  loginAttempts: defineTable({
+    username: v.string(),       // Attempted username
+    success: v.boolean(),       // Was login successful?
+    ipAddress: v.optional(v.string()), // Client IP (if available)
+    timestamp: v.number(),      // Unix timestamp (ms)
+  })
+    .index("by_username", ["username"])
+    .index("by_username_and_time", ["username", "timestamp"]),
 });
