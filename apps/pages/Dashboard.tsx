@@ -50,11 +50,11 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
   const reportData = useMemo(() => {
     const dayVouchers = vouchers.filter(v => v.date === selectedDate);
     const openingBalancesSum = accounts.reduce((sum, a) => a.parentId !== null ? sum + (a.openingDebit - a.openingCredit) : sum, 0);
-    const pastVouchersSum = vouchers.filter(v => v.date < selectedDate).reduce((sum, v) => sum + (v.debit - v.credit), 0);
+    const pastVouchersSum = vouchers.filter(v => v.date < selectedDate).reduce((sum, v) => sum + (v.credit - v.debit), 0);
     const openingBalance = openingBalancesSum + pastVouchersSum;
     const totalDr = dayVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = dayVouchers.reduce((sum, v) => sum + v.credit, 0);
-    const closingBalance = openingBalance + totalDr - totalCr;
+    const closingBalance = openingBalance + totalCr - totalDr;
 
     const groupActivity: Record<string, number> = {};
     dayVouchers.forEach(v => {
