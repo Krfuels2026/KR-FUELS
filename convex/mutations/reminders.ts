@@ -15,6 +15,7 @@ export const createReminder = internalMutation({
     description: v.string(),
     reminderDate: v.string(),  // 'YYYY-MM-DD'
     dueDate: v.string(),       // 'YYYY-MM-DD'
+    createdBy: v.string(),
   },
   handler: async (ctx, args) => {
     // For PoC: No auth check
@@ -39,7 +40,7 @@ export const createReminder = internalMutation({
       description: args.description.trim(),
       reminderDate: args.reminderDate,
       dueDate: args.dueDate,
-      createdBy: "admin", // For PoC: hardcoded, will use user.username in full migration
+      createdBy: args.createdBy,
       createdAt: Date.now(),
     });
 

@@ -151,12 +151,13 @@ export const createReminder = action({
     dueDate: v.string(),
   },
   handler: async (ctx, args) => {
-    requireAuth(args.token);
+    const decoded = requireAuth(args.token);
     return await ctx.runMutation(internal.mutations.reminders.createReminder, {
       title: args.title,
       description: args.description,
       reminderDate: args.reminderDate,
       dueDate: args.dueDate,
+      createdBy: decoded.username,
     });
   },
 });

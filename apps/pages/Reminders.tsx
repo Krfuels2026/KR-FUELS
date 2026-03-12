@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Reminder } from '../types';
+import { formatDateToDDMMYYYY } from '../utils';
 import { Plus, Trash2, Edit2, X, Bell, Calendar, AlertCircle } from 'lucide-react';
 import { useReminders, useCreateReminder, useUpdateReminder, useDeleteReminder } from '../convex-api';
 
@@ -61,6 +62,7 @@ const Reminders: React.FC = () => {
 
   const handleAdd = () => {
     if (!title || !reminderDate || !dueDate) { alert('Please provide title, reminder date and due date'); return; }
+    if (reminderDate >= dueDate) { alert('Reminder date must be before the due date'); return; }
     onAddReminder({ title, description: desc, reminderDate, dueDate });
     setTitle(''); setDesc(''); setReminderDate(''); setDueDate(''); setOpen(false);
   };
@@ -74,6 +76,7 @@ const Reminders: React.FC = () => {
   const handleUpdate = () => {
     if (!editing) return;
     if (!title || !reminderDate || !dueDate) { alert('Please provide title, reminder date and due date'); return; }
+    if (reminderDate >= dueDate) { alert('Reminder date must be before the due date'); return; }
     onUpdateReminder({ ...editing, title, description: desc, reminderDate, dueDate });
     setIsEditOpen(false); setEditing(null); setTitle(''); setDesc(''); setReminderDate(''); setDueDate('');
   };
@@ -146,8 +149,8 @@ const Reminders: React.FC = () => {
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Title</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Reminder Date</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Due Date</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap min-w-[120px]">Reminder Date</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap min-w-[120px]">Due Date</th>
                 <th className="px-8 py-4 w-32"></th>
               </tr>
             </thead>
@@ -159,8 +162,8 @@ const Reminders: React.FC = () => {
               <tr key={r.id} className="group hover:bg-slate-50/50 transition-colors">
                 <td className="px-8 py-4 text-[14px] font-black text-slate-800 uppercase tracking-tight">{r.title}</td>
                 <td className="px-8 py-4 text-[14px] font-medium text-slate-600">{r.description}</td>
-                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums">{r.reminderDate}</td>
-                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums">{r.dueDate}</td>
+                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums whitespace-nowrap">{formatDateToDDMMYYYY(r.reminderDate)}</td>
+                <td className="px-8 py-4 text-[14px] font-medium text-slate-600 tabular-nums whitespace-nowrap">{formatDateToDDMMYYYY(r.dueDate)}</td>
                 <td className="px-8 py-4 text-center">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all">
                     <button 
@@ -269,7 +272,7 @@ const Reminders: React.FC = () => {
 
       {isEditOpen && editing && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsEditOpen(false); setEditing(null); }} />
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => { setIsEditOpen(false); setEditing(null); setTitle(''); setDesc(''); setReminderDate(''); setDueDate(''); }} />
           <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-2.5">
@@ -278,7 +281,7 @@ const Reminders: React.FC = () => {
                 </div>
                 <h2 className="text-[12px] font-bold text-slate-900 uppercase tracking-widest">Edit Reminder</h2>
               </div>
-              <button onClick={() => { setIsEditOpen(false); setEditing(null); }} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all">
+              <button onClick={() => { setIsEditOpen(false); setEditing(null); setTitle(''); setDesc(''); setReminderDate(''); setDueDate(''); }} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all">
                 <X size={18} />
               </button>
             </div>
@@ -329,7 +332,7 @@ const Reminders: React.FC = () => {
               <div className="pt-2 flex gap-3">
                 <button 
                   type="button" 
-                  onClick={() => { setIsEditOpen(false); setEditing(null); }}
+                  onClick={() => { setIsEditOpen(false); setEditing(null); setTitle(''); setDesc(''); setReminderDate(''); setDueDate(''); }}
                   className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all"
                 >
                   Cancel

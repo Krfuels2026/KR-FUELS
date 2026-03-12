@@ -45,6 +45,10 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.parentId) {
+      alert('Please select a Parent Account Group before saving.');
+      return;
+    }
     const accountData: Partial<Account> = { 
       ...formData, 
       id: isEditing ? id : Math.random().toString(36).substr(2, 9), 

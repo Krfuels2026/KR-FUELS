@@ -45,8 +45,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   const ignoreHashChangeRef = useRef(false);
 
   const openingBalance = useMemo(() => {
-    return accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
-  }, [accounts]);
+    const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
+    const pastVouchersSum = vouchers.filter(v => v.date < date).reduce((sum, v) => sum + (v.credit - v.debit), 0);
+    return openingBalancesSum + pastVouchersSum;
+  }, [accounts, vouchers, date]);
 
   const totals = useMemo(() => {
     return rows.reduce((acc, row) => ({
