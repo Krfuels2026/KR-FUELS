@@ -536,6 +536,10 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
           <h1>KR-FUELS ACCOUNTING</h1>
           <p>CASH REPORT</p>
           <p>Period: {formatDateToDDMMYYYY(range.from)} to {formatDateToDDMMYYYY(range.to)}</p>
+          <div style={{ marginTop: 8, fontWeight: 900, fontFamily: 'monospace' }} className="mt-2">
+            <div>Opening Balance: {formatCurrency(Math.abs(reportData.openingBalance))} {reportData.openingBalance >= 0 ? 'DR' : 'CR'}</div>
+            <div>Closing Balance: {formatCurrency(Math.abs(reportData.closingBalance))} {reportData.closingBalance >= 0 ? 'DR' : 'CR'}</div>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -548,18 +552,6 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="bg-slate-50/50">
-                <td className="px-8 py-4 text-[12px] text-slate-400 font-bold tabular-nums whitespace-nowrap uppercase">{formatDateToDDMMYYYY(range.from)}</td>
-                <td className="px-8 py-4">
-                  <p className="text-[14px] font-black text-slate-900 uppercase tracking-tight">OPENING BALANCE B/F</p>
-                </td>
-                <td className="px-8 py-4 text-right font-black text-slate-900 tabular-nums text-[14px] font-mono tracking-tight" colSpan={2}>
-                  {formatCurrency(Math.abs(reportData.openingBalance))} 
-                  <span className="ml-2 text-[10px] font-bold uppercase text-slate-400">
-                    {reportData.openingBalance >= 0 ? 'DR' : 'CR'}
-                  </span>
-                </td>
-              </tr>
 
               {reportData.periodVouchers.map((v) => (
                 <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
