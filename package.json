@@ -9,6 +9,7 @@
     "preview": "cd apps && vite preview"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "convex": "^1.32.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.463.0",
