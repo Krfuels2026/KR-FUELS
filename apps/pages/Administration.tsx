@@ -14,7 +14,9 @@ import {
   Lock,
   Mail,
   CheckCircle2,
-  X
+  X,
+  KeyRound,
+  Settings2
 } from 'lucide-react';
 
 const Administration: React.FC = () => {
@@ -29,6 +31,15 @@ const Administration: React.FC = () => {
     accessibleBunkIds: [] as string[]
   });
 
+  // Change password modal state
+  const [changePwUser, setChangePwUser] = useState<{ id: string; name: string } | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Change bunk access modal state
+  const [changeBunkUser, setChangeBunkUser] = useState<{ id: string; name: string; role: string } | null>(null);
+  const [editBunkIds, setEditBunkIds] = useState<string[]>([]);
+
   const convexBunksRaw = useQuery(convexApi.queries.bunks.getAllBunks);
   const bunks: { id: string; name: string; code: string; location: string }[] = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
 
@@ -38,7 +49,9 @@ const Administration: React.FC = () => {
   const createBunkFn = useAction((convexApi.actions as any).data.createBunk);
   const deleteBunkFn = useAction((convexApi.actions as any).data.deleteBunk);
   const registerUser = useAction((convexApi.actions.auth as any).registerUser);
+  const resetPasswordFn = useAction((convexApi.actions.auth as any).resetPassword);
   const deleteUserFn = useAction((convexApi.actions as any).data.deleteUser);
+  const updateBunkAccessFn = useAction((convexApi.actions as any).data.updateBunkAccess);
 
   // Protected read actions for sensitive user data
   const getAllUsersFn = useAction((convexApi.actions as any).data.getAllUsers);
@@ -141,6 +154,67 @@ const Administration: React.FC = () => {
       .join(', ');
   };
 
+  const getUserBunkIds = (userId: string): string[] => {
+    if (!allUserBunkAccess) return [];
+    return allUserBunkAccess
+      .filter((a: any) => a.userId === userId)
+      .map((a: any) => a.bunkId);
+  };
+
+  const refreshUsers = () => {
+    const t = tok();
+    if (t) {
+      getAllUsersFn({ token: t }).then(setConvexUsers).catch(console.error);
+      getAllUserBunkAccessFn({ token: t }).then(setAllUserBunkAccess).catch(console.error);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changePwUser) return;
+    if (!newPassword) { alert('Please enter a new password.'); return; }
+    if (newPassword !== confirmPassword) { alert('Passwords do not match.'); return; }
+    try {
+      await resetPasswordFn({
+        token: tok(),
+        userId: changePwUser.id as any,
+        newPassword,
+      });
+      alert('Password updated successfully.');
+      setChangePwUser(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      alert('Failed: ' + (err.message || err));
+    }
+  };
+
+  const handleUpdateBunkAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!changeBunkUser) return;
+    try {
+      await updateBunkAccessFn({
+        token: tok(),
+        userId: changeBunkUser.id as any,
+        accessibleBunkIds: editBunkIds as any,
+      });
+      alert('Bunk access updated successfully.');
+      setChangeBunkUser(null);
+      setEditBunkIds([]);
+      refreshUsers();
+    } catch (err: any) {
+      alert('Failed: ' + (err.message || err));
+    }
+  };
+
+  const toggleEditBunk = (bunkId: string) => {
+    if (editBunkIds.includes(bunkId)) {
+      setEditBunkIds(editBunkIds.filter(id => id !== bunkId));
+    } else {
+      setEditBunkIds([...editBunkIds, bunkId]);
+    }
+  };
+
   return (
     <div className="animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between border-b border-slate-200 pb-3 md:pb-5 mb-4 md:mb-8">
@@ -205,7 +279,7 @@ const Administration: React.FC = () => {
           <div className="flex justify-between items-center px-1">
             <h2 className="text-[14px] font-black text-slate-800 uppercase tracking-widest">System User Directory</h2>
             <button 
-              onClick={() => setIsAddingUser(true)}
+              onClick={() => { setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] }); setIsAddingUser(true); }}
               className="px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
             >
               <UserPlus size={16} strokeWidth={3} /> Create Admin
@@ -267,9 +341,25 @@ const Administration: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button onClick={() => handleDeleteUser(user._id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors">
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => { setChangePwUser({ id: user._id, name: user.name }); setNewPassword(''); setConfirmPassword(''); }}
+                          className="p-2 text-slate-300 hover:text-amber-500 transition-colors" title="Change Password"
+                        >
+                          <KeyRound size={16} />
+                        </button>
+                        {user.role !== 'super_admin' && (
+                          <button
+                            onClick={() => { setChangeBunkUser({ id: user._id, name: user.name, role: user.role }); setEditBunkIds(getUserBunkIds(user._id)); }}
+                            className="p-2 text-slate-300 hover:text-blue-500 transition-colors" title="Change Bunk Access"
+                          >
+                            <Settings2 size={16} />
+                          </button>
+                        )}
+                        <button onClick={() => handleDeleteUser(user._id)} className="p-2 text-slate-300 hover:text-rose-500 transition-colors" title="Delete User">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -314,14 +404,14 @@ const Administration: React.FC = () => {
       {isAddingUser && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsAddingUser(false)} />
-          <form onSubmit={handleAddUser} className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <form onSubmit={handleAddUser} autoComplete="off" className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
               <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Add Admin</h2>
               <button type="button" onClick={() => setIsAddingUser(false)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all"><X size={18} /></button>
             </div>
             <div className="p-8 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Staff Display Name</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Display Name</label>
                 <div className="relative">
                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="ARUN" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
@@ -332,14 +422,14 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. ARUN_ADMIN" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
+                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. ARUN_ADMIN" autoComplete="off" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Initial Password</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                    <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
                   </div>
                 </div>
               </div>
@@ -392,6 +482,95 @@ const Administration: React.FC = () => {
             <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
               <button type="button" onClick={() => setIsAddingUser(false)} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
               <button type="submit" className="flex-1 py-3 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all">Create Account</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {changePwUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setChangePwUser(null)} />
+          <form onSubmit={handleResetPassword} autoComplete="off" className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Change Password</h2>
+              <button type="button" onClick={() => setChangePwUser(null)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all"><X size={18} /></button>
+            </div>
+            <div className="p-8 space-y-5">
+              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-brand">
+                  <KeyRound size={20} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{changePwUser.name}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Reset user password</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="RE-ENTER PASSWORD" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                </div>
+              </div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Must be 8+ characters, include 1 uppercase letter & 1 number</p>
+            </div>
+            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+              <button type="button" onClick={() => setChangePwUser(null)} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
+              <button type="submit" className="flex-1 py-3 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all">Update Password</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {changeBunkUser && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setChangeBunkUser(null)} />
+          <form onSubmit={handleUpdateBunkAccess} className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+              <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-widest">Change Bunk Access</h2>
+              <button type="button" onClick={() => setChangeBunkUser(null)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all"><X size={18} /></button>
+            </div>
+            <div className="p-8 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-brand">
+                  <Settings2 size={20} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">{changeBunkUser.name}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Update authorized bunks</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Bunk Access Permissions</label>
+                <div className="grid grid-cols-1 gap-2">
+                  {bunks.map(b => (
+                    <div 
+                      key={b.id} 
+                      onClick={() => toggleEditBunk(b.id)}
+                      className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${editBunkIds.includes(b.id) ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Building2 size={14} className={editBunkIds.includes(b.id) ? 'text-emerald-600' : 'text-slate-400'} />
+                        <span className={`text-[11px] font-black uppercase tracking-tight ${editBunkIds.includes(b.id) ? 'text-emerald-900' : 'text-slate-600'}`}>{b.name}</span>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${editBunkIds.includes(b.id) ? 'bg-brand border-brand' : 'bg-white border-slate-200'}`}>
+                        {editBunkIds.includes(b.id) && <CheckCircle2 size={12} className="text-white" />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex gap-4">
+              <button type="button" onClick={() => setChangeBunkUser(null)} className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all">Cancel</button>
+              <button type="submit" className="flex-1 py-3 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all">Save Access</button>
             </div>
           </form>
         </div>

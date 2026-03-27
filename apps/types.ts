@@ -42,6 +42,7 @@ export interface LedgerEntry {
   credit: number;
   balance: number;
   balanceType: 'Dr' | 'Cr';
+  accountId?: string;
 }
 
 export interface Reminder {

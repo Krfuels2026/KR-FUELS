@@ -4,6 +4,8 @@ import { Account, Voucher } from '../types';
 import { calculateLedger, formatCurrency, formatDateToDDMMYYYY } from '../utils';
 import LedgerModalSelector from '../components/LedgerModalSelector';
 import { FileSpreadsheet, FileText, Calendar } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface LedgerReportProps {
   accounts: Account[];
@@ -45,7 +47,17 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   };
 
   const selectedAccount = accounts.find(a => a.id === filters.accountId);
-  
+  const isParentAccount = useMemo(() => {
+    if (!selectedAccount) return false;
+    return accounts.some(a => a.parentId === selectedAccount.id);
+  }, [selectedAccount, accounts]);
+
+  const accountNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    accounts.forEach(a => { map[a.id] = a.name; });
+    return map;
+  }, [accounts]);
+
   const reportData = useMemo(() => {
     if (!selectedAccount) return [];
 
@@ -77,33 +89,176 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   const totalDr = reportData.reduce((sum, e) => sum + e.debit, 0);
   const totalCr = reportData.reduce((sum, e) => sum + e.credit, 0);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (reportData.length === 0) return;
-    
-    const header = ["DATE", "DESCRIPTION", "DEBIT (DR)", "CREDIT (CR)", "BALANCE", "TYPE"];
-    const rows = reportData.map(e => [
-      formatDateToDDMMYYYY(e.date),
-      e.description.replace(/,/g, ' '),
-      e.debit.toFixed(2),
-      e.credit.toFixed(2),
-      e.balance.toFixed(2),
-      e.balanceType
-    ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + `KR-FUELS ACCOUNTING\n`
-      + `LEDGER REPORT\n`
-      + `${selectedAccount?.name?.toUpperCase()}\n`
-      + `Period: ${formatDateToDDMMYYYY(filters.fromDate)} to ${formatDateToDDMMYYYY(filters.toDate)}\n\n`
-      + [header, ...rows].map(e => e.join(",")).join("\n");
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Ledger Report');
+    const colCount = isParentAccount ? 6 : 5;
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `LEDGER_${selectedAccount?.name}_${filters.fromDate}_TO_${filters.toDate}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (isParentAccount) {
+      ws.columns = [
+        { width: 16 }, { width: 24 }, { width: 32 },
+        { width: 18 }, { width: 18 }, { width: 22 },
+      ];
+    } else {
+      ws.columns = [
+        { width: 16 }, { width: 36 },
+        { width: 18 }, { width: 18 }, { width: 22 },
+      ];
+    }
+
+    const headerFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: '166534' } };
+    const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFF' }, size: 11 };
+    const borderThin: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'E2E8F0' } },
+      bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+      left: { style: 'thin', color: { argb: 'E2E8F0' } },
+      right: { style: 'thin', color: { argb: 'E2E8F0' } },
+    };
+
+    // Title
+    const titleRow = ws.addRow(['KR-FUELS ACCOUNTING']);
+    ws.mergeCells(1, 1, 1, colCount);
+    titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: '0F172A' } };
+    titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.height = 30;
+
+    // Subtitle
+    const subtitleRow = ws.addRow(['LEDGER REPORT']);
+    ws.mergeCells(2, 1, 2, colCount);
+    subtitleRow.getCell(1).font = { bold: true, size: 13, color: { argb: '166534' } };
+    subtitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    subtitleRow.height = 24;
+
+    // Account name
+    const acctRow = ws.addRow([selectedAccount?.name?.toUpperCase() || '']);
+    ws.mergeCells(3, 1, 3, colCount);
+    acctRow.getCell(1).font = { bold: true, size: 12, color: { argb: '0F172A' } };
+    acctRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Period
+    const periodRow = ws.addRow([`Period: ${formatDateToDDMMYYYY(filters.fromDate)} to ${formatDateToDDMMYYYY(filters.toDate)}`]);
+    ws.mergeCells(4, 1, 4, colCount);
+    periodRow.getCell(1).font = { size: 10, color: { argb: '64748B' } };
+    periodRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    ws.addRow([]);
+
+    // Column headers
+    const headers = isParentAccount
+      ? ['DATE', 'ACCOUNT', 'DESCRIPTION', 'DEBIT (DR)', 'CREDIT (CR)', 'BALANCE']
+      : ['DATE', 'DESCRIPTION', 'DEBIT (DR)', 'CREDIT (CR)', 'BALANCE'];
+    const hRow = ws.addRow(headers);
+    hRow.height = 28;
+    hRow.eachCell((cell) => {
+      cell.fill = headerFill;
+      cell.font = headerFont;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = borderThin;
+    });
+
+    // Data rows
+    const altFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8FAFC' } };
+    const drColIdx = isParentAccount ? 4 : 3;
+    const crColIdx = isParentAccount ? 5 : 4;
+    const balColIdx = isParentAccount ? 6 : 5;
+    const descColIdx = isParentAccount ? 3 : 2;
+
+    reportData.forEach((entry, idx) => {
+      const rowData = isParentAccount
+        ? [
+            formatDateToDDMMYYYY(entry.date),
+            entry.accountId ? (accountNameMap[entry.accountId] || '-').toUpperCase() : '-',
+            entry.description.toUpperCase(),
+            entry.debit > 0 ? entry.debit : '',
+            entry.credit > 0 ? entry.credit : '',
+            entry.balance,
+          ]
+        : [
+            formatDateToDDMMYYYY(entry.date),
+            entry.description.toUpperCase(),
+            entry.debit > 0 ? entry.debit : '',
+            entry.credit > 0 ? entry.credit : '',
+            entry.balance,
+          ];
+      const row = ws.addRow(rowData);
+      row.height = 22;
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.border = borderThin;
+        cell.font = { size: 10 };
+        if (idx % 2 === 1) cell.fill = altFill;
+
+        if (colNum <= descColIdx) {
+          cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          cell.font = { size: 10, bold: true };
+        }
+        if (colNum === drColIdx) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+          if (entry.debit > 0) cell.font = { size: 10, bold: true, color: { argb: 'E11D48' } };
+        }
+        if (colNum === crColIdx) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+          if (entry.credit > 0) cell.font = { size: 10, bold: true, color: { argb: '059669' } };
+        }
+        if (colNum === balColIdx) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+          cell.font = { size: 10, bold: true, color: { argb: '0F172A' } };
+        }
+      });
+    });
+
+    // Total / Summary row
+    const lastEntry = reportData[reportData.length - 1];
+    const totalRowData = isParentAccount
+      ? ['', '', 'MOVEMENT SUMMARY', totalDr, totalCr, lastEntry.balance]
+      : ['', 'MOVEMENT SUMMARY', totalDr, totalCr, lastEntry.balance];
+    const totalRow = ws.addRow(totalRowData);
+    totalRow.height = 28;
+    const totalFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+    totalRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+      cell.border = {
+        top: { style: 'medium', color: { argb: '94A3B8' } },
+        bottom: { style: 'medium', color: { argb: '94A3B8' } },
+        left: { style: 'thin', color: { argb: 'E2E8F0' } },
+        right: { style: 'thin', color: { argb: 'E2E8F0' } },
+      };
+      cell.fill = totalFill;
+      cell.font = { bold: true, size: 11, color: { argb: '0F172A' } };
+      if (colNum === descColIdx) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      if (colNum === drColIdx) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.numFmt = '#,##0.00';
+        cell.font = { bold: true, size: 12, color: { argb: 'E11D48' } };
+      }
+      if (colNum === crColIdx) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.numFmt = '#,##0.00';
+        cell.font = { bold: true, size: 12, color: { argb: '059669' } };
+      }
+      if (colNum === balColIdx) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.numFmt = '#,##0.00';
+        cell.font = { bold: true, size: 12, color: { argb: '0F172A' } };
+      }
+    });
+
+    // Footer
+    ws.addRow([]);
+    const footerRow = ws.addRow([`Generated: ${new Date().toLocaleString('en-IN')}  |  KR Fuels Management System  |  Confidential`]);
+    ws.mergeCells(footerRow.number, 1, footerRow.number, colCount);
+    footerRow.getCell(1).font = { size: 8, italic: true, color: { argb: '94A3B8' } };
+    footerRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Freeze header pane
+    ws.views = [{ state: 'frozen', ySplit: 6, xSplit: 0 }];
+
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `LEDGER_${selectedAccount?.name}_${filters.fromDate}_TO_${filters.toDate}.xlsx`);
   };
 
   const handlePDF = () => {
@@ -201,6 +356,9 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 print:bg-slate-100">
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Date</th>
+                {isParentAccount && (
+                  <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Account</th>
+                )}
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Debit (Dr)</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Credit (Cr)</th>
@@ -210,24 +368,29 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
             <tbody className="divide-y divide-slate-100">
               {reportData.map((entry, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-8 py-4 text-[14px] font-medium text-slate-600 whitespace-nowrap tabular-nums">{formatDateToDDMMYYYY(entry.date)}</td>
-                  <td className="px-8 py-4 text-[14px] font-black text-slate-800 uppercase tracking-tight">
+                  <td className="px-8 py-5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>
+                  {isParentAccount && (
+                    <td className="px-8 py-5 text-[12px] font-bold text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                      {entry.accountId ? (accountNameMap[entry.accountId] || '-') : '-'}
+                    </td>
+                  )}
+                  <td className="px-8 py-5 text-[12px] font-bold text-slate-800 uppercase tracking-tight">
                     {entry.description}
                   </td>
-                  <td className="px-8 py-4 text-[14px] text-rose-600 text-right font-black tabular-nums font-mono">
+                  <td className="px-8 py-5 text-[12px] text-rose-500 text-right font-bold tabular-nums font-mono tracking-tight">
                     {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
                   </td>
-                  <td className="px-8 py-4 text-[14px] text-emerald-600 text-right font-black tabular-nums font-mono">
+                  <td className="px-8 py-5 text-[12px] text-emerald-600 text-right font-bold tabular-nums font-mono tracking-tight">
                     {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
                   </td>
-                  <td className="px-8 py-4 text-[14px] text-slate-900 text-right font-black tabular-nums font-mono">
+                  <td className="px-8 py-5 text-[12px] text-slate-900 text-right font-bold tabular-nums font-mono tracking-tight">
                     {formatCurrency(entry.balance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{entry.balanceType}</span>
                   </td>
                 </tr>
               ))}
               {reportData.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-8 py-24 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
+                  <td colSpan={isParentAccount ? 6 : 5} className="px-8 py-24 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
                     {filters.accountId ? 'NO TRANSACTION RECORDS FOUND.' : 'SELECT AN ACCOUNT TO VIEW ACTIVITY.'}
                   </td>
                 </tr>
@@ -236,12 +399,11 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
             {reportData.length > 0 && (
               <tfoot className="bg-slate-50 font-bold print:bg-slate-100 uppercase">
                 <tr>
-                  <td colSpan={2} className="px-8 py-6 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Movement Summary:</td>
+                  <td colSpan={isParentAccount ? 3 : 2} className="px-8 py-6 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Movement Summary:</td>
                   <td className="px-8 py-6 text-right text-rose-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalDr)}</td>
                   <td className="px-8 py-6 text-right text-emerald-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalCr)}</td>
                   <td className="px-8 py-6 text-right text-slate-900 font-black text-[15px] tabular-nums tracking-tighter font-mono">
-                    <span className="text-[10px] text-slate-400 font-bold mr-2">{reportData[reportData.length - 1].balanceType}</span>
-                    {formatCurrency(reportData[reportData.length - 1].balance)}
+                  {formatCurrency(reportData[reportData.length - 1].balance)} <span className="text-[10px] text-slate-400 font-bold ml-2">{reportData[reportData.length - 1].balanceType}</span>
                   </td>
                 </tr>
               </tfoot>

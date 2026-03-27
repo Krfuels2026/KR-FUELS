@@ -9,8 +9,11 @@
     "preview": "cd apps && vite preview"
   },
   "dependencies": {
+    "@types/file-saver": "^2.0.7",
     "bcryptjs": "^3.0.3",
     "convex": "^1.32.0",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.463.0",
     "react": "^19.2.4",

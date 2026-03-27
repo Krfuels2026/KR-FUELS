@@ -34,6 +34,7 @@ interface DailyVoucherProps {
 const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], onSave, onUpdateVoucher, onDeleteVoucher }) => {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [rows, setRows] = useState<BatchRow[]>([
@@ -66,6 +67,55 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   const handleAddRow = () => {
     setRows([...rows, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);
     setIsDirty(true);
+  };
+
+  const focusCell = (rowIndex: number, colIndex: number) => {
+    if (!tableRef.current) return;
+    const el = tableRef.current.querySelector<HTMLInputElement>(`[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+    if (el) { el.focus(); el.select(); }
+  };
+
+  const handleCellKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, colIndex: number) => {
+    const row = rows[rowIndex];
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const nextCol = colIndex + 1;
+      if (nextCol <= 2) {
+        focusCell(rowIndex, nextCol);
+      } else {
+        // On last column (Debit), validate before moving to next row
+        if (!row.description.trim()) {
+          focusCell(rowIndex, 0);
+          return;
+        }
+        if (row.credit <= 0 && row.debit <= 0) {
+          focusCell(rowIndex, 1);
+          return;
+        }
+        // Row is complete, move to next row
+        if (rowIndex + 1 < rows.length) {
+          focusCell(rowIndex + 1, 0);
+        } else {
+          handleAddRow();
+          setTimeout(() => focusCell(rowIndex + 1, 0), 50);
+        }
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        if (rowIndex > 0) focusCell(rowIndex - 1, colIndex);
+      } else {
+        if (rowIndex + 1 < rows.length) {
+          focusCell(rowIndex + 1, colIndex);
+        } else {
+          // Only add a new row if current row has data filled
+          if (row.description.trim() && (row.credit > 0 || row.debit > 0)) {
+            handleAddRow();
+            setTimeout(() => focusCell(rowIndex + 1, colIndex), 50);
+          }
+        }
+      }
+    }
   };
 
   const handleRemoveRow = (id: string) => {
@@ -260,8 +310,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                 <th className="px-2 py-3 w-[44px]"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
-              {rows.map((row) => (
+            <tbody ref={tableRef} className="divide-y divide-slate-50">
+              {rows.map((row, rowIndex) => (
                 <tr key={row.id} className="group hover:bg-slate-50/20 transition-colors">
                   <td className="px-3 py-2">
                     <LedgerModalSelector
@@ -274,6 +324,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                     <input
                       type="text" value={row.description}
                       onChange={e => updateRow(row.id, 'description', e.target.value)}
+                      onKeyDown={e => handleCellKeyDown(e, rowIndex, 0)}
+                      data-row={rowIndex} data-col={0}
                       placeholder="Enter transaction details..."
                       className="w-full px-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg text-[13px] font-medium text-slate-800 outline-none focus:border-brand focus:bg-white transition-all uppercase h-[36px] placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case"
                     />
@@ -287,6 +339,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                         step="0.01"
                         value={row.credit === 0 ? '' : row.credit || ''}
                         onChange={e => updateRow(row.id, 'credit', e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
+                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 1)}
+                        data-row={rowIndex} data-col={1}
                         placeholder="0.00"
                         className="w-full pl-6 pr-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-green-800 text-right outline-none focus:border-brand focus:bg-white transition-all h-[36px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
                       />
@@ -301,6 +355,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                         step="0.01"
                         value={row.debit === 0 ? '' : row.debit || ''}
                         onChange={e => updateRow(row.id, 'debit', e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
+                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 2)}
+                        data-row={rowIndex} data-col={2}
                         placeholder="0.00"
                         className="w-full pl-6 pr-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-rose-600 text-right outline-none focus:border-rose-400 focus:bg-white transition-all h-[36px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
                       />

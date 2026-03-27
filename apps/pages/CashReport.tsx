@@ -3,6 +3,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Account, Voucher } from '../types';
 import { formatCurrency, formatDateToDDMMYYYY } from '../utils';
 import { Filter, TrendingUp, History, Calendar, FileSpreadsheet, FileText, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, X } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface CashReportProps {
   accounts: Account[];
@@ -53,14 +55,16 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   const handleGeneratePDF = () => {
     const filterLabel = getFilterLabel();
     const txRows = reportData.periodVouchers.map(v => {
-      const acct = accounts.find(a => a.id === v.accountId)?.name || '—';
+      const acct = accountNameMap[v.accountId] || '—';
+      const parentName = getParentName(v.accountId);
       const cr = v.credit > 0 ? `<span style="color:#059669;font-weight:900;">${formatCurrency(v.credit)}</span>` : '<span style="color:#94a3b8;">—</span>';
       const dr = v.debit > 0 ? `<span style="color:#e11d48;font-weight:900;">${formatCurrency(v.debit)}</span>` : '<span style="color:#94a3b8;">—</span>';
       return `<tr>
         <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:11px;white-space:nowrap;">${formatDateToDDMMYYYY(v.date)}</td>
+        <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:11px;color:#64748b;text-transform:uppercase;">${parentName}</td>
+        <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;font-weight:700;font-size:11px;color:#16a34a;text-transform:uppercase;">${acct}</td>
         <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;">
           <div style="font-weight:900;font-size:12px;color:#0f172a;text-transform:uppercase;">${v.description}</div>
-          <div style="font-size:10px;color:#16a34a;font-weight:700;text-transform:uppercase;margin-top:2px;">${acct}</div>
         </td>
         <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;font-size:13px;">${cr}</td>
         <td style="padding:8px 14px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;font-size:13px;">${dr}</td>
@@ -99,11 +103,11 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     table { width:100%; border-collapse:collapse; }
     thead tr { background:#f8fafc; }
     thead th { padding:10px 14px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#64748b; border-bottom:2px solid #e2e8f0; }
-    thead th:nth-child(3), thead th:nth-child(4) { text-align:right; }
+    thead th:nth-child(5), thead th:nth-child(6) { text-align:right; }
     tfoot tr { background:#f8fafc; }
     tfoot td { padding:12px 14px; font-weight:900; font-family:monospace; font-size:15px; border-top:2px solid #e2e8f0; }
-    tfoot td:nth-child(2) { text-align:right; color:#059669; }
-    tfoot td:nth-child(3) { text-align:right; color:#e11d48; }
+    tfoot td:nth-child(5) { text-align:right; color:#059669; }
+    tfoot td:nth-child(6) { text-align:right; color:#e11d48; }
     .note { margin-top:20px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:12px 16px; font-size:12px; color:#92400e; }
     .footer { margin-top:28px; text-align:center; font-size:10px; color:#94a3b8; border-top:1px solid #f1f5f9; padding-top:14px; }
   </style>
@@ -146,23 +150,25 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   <table>
     <thead>
       <tr>
-        <th style="width:110px;">Date</th>
+        <th style="width:100px;">Date</th>
+        <th>Account</th>
+        <th>Ledger</th>
         <th>Description</th>
-        <th style="width:140px;">Credit (CR)</th>
-        <th style="width:140px;">Debit (DR)</th>
+        <th style="width:130px;">Credit (CR)</th>
+        <th style="width:130px;">Debit (DR)</th>
       </tr>
     </thead>
     <tbody>
       <tr style="background:#fffbeb;">
         <td style="padding:8px 14px;font-size:11px;color:#92400e;font-weight:700;">${formatDateToDDMMYYYY(range.from)}</td>
-        <td style="padding:8px 14px;font-weight:900;font-size:13px;text-transform:uppercase;" colspan="3">Opening Balance B/F &nbsp; <span style="font-family:monospace;">${formatCurrency(Math.abs(reportData.openingBalance))} ${reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span></td>
+        <td style="padding:8px 14px;font-weight:900;font-size:13px;text-transform:uppercase;" colspan="5">Opening Balance B/F &nbsp; <span style="font-family:monospace;">${formatCurrency(Math.abs(reportData.openingBalance))} ${reportData.openingBalance >= 0 ? 'DR' : 'CR'}</span></td>
       </tr>
-      ${txRows || `<tr><td colspan="4" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic;">No transactions in this period.</td></tr>`}
+      ${txRows || `<tr><td colspan="6" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic;">No transactions in this period.</td></tr>`}
     </tbody>
     ${reportData.periodVouchers.length > 0 ? `
     <tfoot>
       <tr>
-        <td colspan="2" style="padding:12px 14px;text-align:right;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;">Total</td>
+        <td colspan="4" style="padding:12px 14px;text-align:right;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;">Total</td>
         <td style="text-align:right;color:#059669;">${formatCurrency(reportData.totalCr)}</td>
         <td style="text-align:right;color:#e11d48;">${formatCurrency(reportData.totalDr)}</td>
       </tr>
@@ -216,6 +222,18 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
 
   const range = getEffectiveRange();
 
+  const accountNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    accounts.forEach(a => { map[a.id] = a.name; });
+    return map;
+  }, [accounts]);
+
+  const getParentName = (accountId: string): string => {
+    const acct = accounts.find(a => a.id === accountId);
+    if (!acct || !acct.parentId) return '—';
+    return accountNameMap[acct.parentId] || '—';
+  };
+
   const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) {
       try {
@@ -260,29 +278,151 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     };
   }, [range, vouchers, accounts]);
 
-  const handleExportExcel = () => {
-    const headers = ['DATE', 'DESCRIPTION', 'LEDGER', 'CREDIT (CR)', 'DEBIT (DR)'];
-    const rows = reportData.periodVouchers.map(v => [
-      formatDateToDDMMYYYY(v.date),
-      v.description.toUpperCase().replace(/,/g, ' '),
-      (accounts.find(a => a.id === v.accountId)?.name || '').toUpperCase().replace(/,/g, ' '),
-      v.credit.toFixed(2),
-      v.debit.toFixed(2)
+  const handleExportExcel = async () => {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Cash Report');
+    const colCount = 6;
+
+    ws.columns = [
+      { width: 16 }, { width: 22 }, { width: 22 },
+      { width: 32 }, { width: 20 }, { width: 20 },
+    ];
+
+    const headerFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: '166534' } };
+    const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFF' }, size: 11 };
+    const borderThin: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'E2E8F0' } },
+      bottom: { style: 'thin', color: { argb: 'E2E8F0' } },
+      left: { style: 'thin', color: { argb: 'E2E8F0' } },
+      right: { style: 'thin', color: { argb: 'E2E8F0' } },
+    };
+
+    // Title
+    const titleRow = ws.addRow(['KR-FUELS ACCOUNTING']);
+    ws.mergeCells(1, 1, 1, colCount);
+    titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: '0F172A' } };
+    titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    titleRow.height = 30;
+
+    // Subtitle
+    const subtitleRow = ws.addRow(['CASH REPORT']);
+    ws.mergeCells(2, 1, 2, colCount);
+    subtitleRow.getCell(1).font = { bold: true, size: 13, color: { argb: '166534' } };
+    subtitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    subtitleRow.height = 24;
+
+    // Period
+    const periodRow = ws.addRow([`Period: ${formatDateToDDMMYYYY(range.from)} to ${formatDateToDDMMYYYY(range.to)}`]);
+    ws.mergeCells(3, 1, 3, colCount);
+    periodRow.getCell(1).font = { size: 10, color: { argb: '64748B' } };
+    periodRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    ws.addRow([]);
+
+    // Summary row
+    const summaryRow = ws.addRow([
+      'Opening Balance', `${formatCurrency(Math.abs(reportData.openingBalance))} ${reportData.openingBalance >= 0 ? 'DR' : 'CR'}`,
+      'Total Inflow', `+${formatCurrency(reportData.totalCr)}`,
+      'Total Outflow', `-${formatCurrency(reportData.totalDr)}`
     ]);
+    summaryRow.getCell(1).font = { bold: true, size: 12, color: { argb: '0F172A' } };
+    summaryRow.getCell(2).font = { bold: true, size: 13, color: { argb: '0F172A' } };
+    summaryRow.getCell(3).font = { bold: true, size: 12, color: { argb: '059669' } };
+    summaryRow.getCell(4).font = { bold: true, size: 13, color: { argb: '059669' } };
+    summaryRow.getCell(5).font = { bold: true, size: 12, color: { argb: 'E11D48' } };
+    summaryRow.getCell(6).font = { bold: true, size: 13, color: { argb: 'E11D48' } };
+    summaryRow.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    summaryRow.height = 26;
 
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + `KR-FUELS ACCOUNTING\n`
-      + `CASH REPORT\n`
-      + `Period: ${formatDateToDDMMYYYY(range.from)} to ${formatDateToDDMMYYYY(range.to)}\n\n`
-      + [headers, ...rows].map(e => e.join(",")).join("\n");
+    // Closing balance row
+    const closingRow = ws.addRow([
+      'Closing Balance', `${formatCurrency(Math.abs(reportData.closingBalance))} ${reportData.closingBalance >= 0 ? 'DR' : 'CR'}`,
+      '', '', '', ''
+    ]);
+    closingRow.getCell(1).font = { bold: true, size: 12, color: { argb: '0F172A' } };
+    closingRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+    closingRow.getCell(2).font = { bold: true, size: 13, color: { argb: '0F172A' } };
+    closingRow.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
 
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `CASH_STATEMENT_${range.from}_TO_${range.to}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    ws.addRow([]);
+
+    // Column headers
+    const headers = ['DATE', 'ACCOUNT', 'LEDGER', 'DESCRIPTION', 'CREDIT (CR)', 'DEBIT (DR)'];
+    const hRow = ws.addRow(headers);
+    hRow.height = 28;
+    hRow.eachCell((cell) => {
+      cell.fill = headerFill;
+      cell.font = headerFont;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = borderThin;
+    });
+
+    // Data rows
+    const altFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8FAFC' } };
+    reportData.periodVouchers.forEach((v, idx) => {
+      const row = ws.addRow([
+        formatDateToDDMMYYYY(v.date),
+        getParentName(v.accountId).toUpperCase(),
+        (accountNameMap[v.accountId] || '—').toUpperCase(),
+        v.description.toUpperCase(),
+        v.credit > 0 ? v.credit : '',
+        v.debit > 0 ? v.debit : '',
+      ]);
+      row.height = 22;
+      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.border = borderThin;
+        cell.font = { size: 10, bold: colNum <= 4 };
+        if (idx % 2 === 1) cell.fill = altFill;
+        if (colNum <= 4) {
+          cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        } else {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+        }
+        if (colNum === 5 && v.credit > 0) cell.font = { size: 10, bold: true, color: { argb: '059669' } };
+        if (colNum === 6 && v.debit > 0) cell.font = { size: 10, bold: true, color: { argb: 'E11D48' } };
+      });
+    });
+
+    // Total row
+    if (reportData.periodVouchers.length > 0) {
+      const totalRow = ws.addRow(['', '', '', 'TOTAL', reportData.totalCr, reportData.totalDr]);
+      totalRow.height = 28;
+      const totalFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.border = {
+          top: { style: 'medium', color: { argb: '94A3B8' } },
+          bottom: { style: 'medium', color: { argb: '94A3B8' } },
+          left: { style: 'thin', color: { argb: 'E2E8F0' } },
+          right: { style: 'thin', color: { argb: 'E2E8F0' } },
+        };
+        cell.fill = totalFill;
+        cell.font = { bold: true, size: 12, color: { argb: '0F172A' } };
+        if (colNum === 4) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        if (colNum >= 5) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0.00';
+        }
+        if (colNum === 5) cell.font = { bold: true, size: 12, color: { argb: '059669' } };
+        if (colNum === 6) cell.font = { bold: true, size: 12, color: { argb: 'E11D48' } };
+      });
+    }
+
+    // Footer
+    ws.addRow([]);
+    const footerRow = ws.addRow([`Generated: ${new Date().toLocaleString('en-IN')}  |  KR Fuels Management System  |  Confidential`]);
+    ws.mergeCells(footerRow.number, 1, footerRow.number, colCount);
+    footerRow.getCell(1).font = { size: 8, italic: true, color: { argb: '94A3B8' } };
+    footerRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Freeze header pane
+    ws.views = [{ state: 'frozen', ySplit: 8, xSplit: 0 }];
+
+    const buffer = await wb.xlsx.writeBuffer();
+    saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `CASH_STATEMENT_${range.from}_TO_${range.to}.xlsx`);
   };
 
   return (
@@ -546,7 +686,9 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 print:bg-slate-100">
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest w-40">Date</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description </th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Account</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Ledger</th>
+                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Credit (CR)</th>
                 <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right w-48">Debit (DR)</th>
               </tr>
@@ -556,30 +698,33 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
               {reportData.periodVouchers.map((v) => (
                 <tr key={v.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-8 py-5 text-[12px] text-slate-400 font-bold tabular-nums whitespace-nowrap uppercase">{formatDateToDDMMYYYY(v.date)}</td>
-                  <td className="px-8 py-5">
-                    <p className="text-[14px] font-black text-slate-800 uppercase tracking-tight leading-tight">{v.description}</p>
-                    <p className="text-[10px] text-brand font-bold uppercase mt-1.5 tracking-widest">
-                      {accounts.find(a => a.id === v.accountId)?.name}
-                    </p>
+                  <td className="px-8 py-5 text-[12px] font-bold text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                    {getParentName(v.accountId)}
                   </td>
-                  <td className="px-8 py-5 text-right font-black text-emerald-600 tabular-nums text-[14px] font-mono tracking-tight">
+                  <td className="px-8 py-5 text-[12px] font-bold text-slate-800 uppercase tracking-tight whitespace-nowrap">
+                    {accountNameMap[v.accountId] || '—'}
+                  </td>
+                  <td className="px-8 py-5">
+                    <p className="text-[12px] font-bold text-slate-800 uppercase tracking-tight leading-tight">{v.description}</p>
+                  </td>
+                  <td className="px-8 py-5 text-right font-bold text-emerald-600 tabular-nums text-[12px] font-mono tracking-tight">
                     {v.credit > 0 ? formatCurrency(v.credit) : '—'}
                   </td>
-                  <td className="px-8 py-5 text-right font-black text-rose-500 tabular-nums text-[14px] font-mono tracking-tight">
+                  <td className="px-8 py-5 text-right font-bold text-rose-500 tabular-nums text-[12px] font-mono tracking-tight">
                     {v.debit > 0 ? formatCurrency(v.debit) : '—'}
                   </td>
                 </tr>
               ))}
               {reportData.periodVouchers.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-32 text-center text-slate-300 font-bold uppercase text-[12px] tracking-widest">No transaction records found in this period.</td>
+                  <td colSpan={6} className="py-32 text-center text-slate-300 font-bold uppercase text-[12px] tracking-widest">No transaction records found in this period.</td>
                 </tr>
               )}
             </tbody>
             {reportData.periodVouchers.length > 0 && (
               <tfoot className="bg-slate-50 font-bold print:bg-slate-100">
                 <tr>
-                  <td colSpan={2} className="px-8 py-6 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Summary:</td>
+                  <td colSpan={4} className="px-8 py-6 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Summary:</td>
                   <td className="px-8 py-6 text-right text-emerald-600 font-black text-[16px] tabular-nums font-mono">{formatCurrency(reportData.totalCr)}</td>
                   <td className="px-8 py-6 text-right text-rose-600 font-black text-[16px] tabular-nums font-mono">{formatCurrency(reportData.totalDr)}</td>
                 </tr>

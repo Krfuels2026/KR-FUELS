@@ -55,7 +55,8 @@ export const calculateLedger = (
         debit: v.debit,
         credit: v.credit,
         balance: Math.abs(runningBalance),
-        balanceType: runningBalance >= 0 ? 'Dr' : 'Cr'
+        balanceType: runningBalance >= 0 ? 'Dr' : 'Cr',
+        accountId: v.accountId
       });
     }
   });
