@@ -44,13 +44,7 @@ const LedgerModalSelector: React.FC<LedgerModalSelectorProps> = ({
   const renderHierarchical = (parentId: string | null, depth: number = 0) => {
     const children = accounts.filter(a => a.parentId === parentId);
     
-    const sortedChildren = [...children].sort((a, b) => {
-      const aIsParent = parentIds.has(a.id);
-      const bIsParent = parentIds.has(b.id);
-      if (aIsParent && !bIsParent) return -1;
-      if (!aIsParent && bIsParent) return 1;
-      return a.name.localeCompare(b.name);
-    });
+    const sortedChildren = [...children].sort((a, b) => a.name.localeCompare(b.name));
 
     return sortedChildren.map(account => {
       const isSelected = selectedId === account.id;
@@ -140,7 +134,7 @@ const LedgerModalSelector: React.FC<LedgerModalSelectorProps> = ({
                 <div>
                   <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Select Account</h2>
                   <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                    {allowGroups ? 'Groups and Ledgers are selectable' : 'Pick a sub-ledger to continue'}
+                    {allowGroups ? 'Groups are selectable' : 'Pick a sub-ledger to continue'}
                   </p>
                 </div>
               </div>

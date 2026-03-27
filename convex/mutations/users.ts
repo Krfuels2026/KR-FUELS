@@ -78,3 +78,34 @@ export const deleteUser = internalMutation({
     return { success: true };
   },
 });
+
+/**
+ * Update user's bunk access (replace all access records)
+ */
+export const updateBunkAccess = internalMutation({
+  args: {
+    userId: v.id("users"),
+    accessibleBunkIds: v.array(v.id("bunks")),
+  },
+  handler: async (ctx, args) => {
+    // Remove existing access records
+    const existingAccess = await ctx.db
+      .query("userBunkAccess")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    for (const record of existingAccess) {
+      await ctx.db.delete(record._id);
+    }
+
+    // Insert new access records
+    for (const bunkId of args.accessibleBunkIds) {
+      await ctx.db.insert("userBunkAccess", {
+        userId: args.userId,
+        bunkId,
+      });
+    }
+
+    return { success: true };
+  },
+});

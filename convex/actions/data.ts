@@ -231,6 +231,22 @@ export const deleteUser = action({
   },
 });
 
+export const updateBunkAccess = action({
+  args: {
+    token: v.string(),
+    userId: v.id("users"),
+    accessibleBunkIds: v.array(v.id("bunks")),
+  },
+  handler: async (ctx, args) => {
+    const decoded = requireAuth(args.token);
+    requireSuperAdmin(decoded);
+    return await ctx.runMutation(internal.mutations.users.updateBunkAccess, {
+      userId: args.userId,
+      accessibleBunkIds: args.accessibleBunkIds,
+    });
+  },
+});
+
 // ── Protected reads (sensitive data) ──────────────────────────────────────────
 
 export const getAllUsers = action({

@@ -11,7 +11,10 @@ import {
   Folder, 
   Plus, 
   Layers,
-  Users2
+  Users2,
+  Pencil,
+  X,
+  Check
 } from 'lucide-react';
 import { formatCurrency } from '../utils';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -19,15 +22,18 @@ import ConfirmDialog from '../components/ConfirmDialog';
 interface AccountsListProps {
   accounts: Account[];
   deleteAccount: (id: string) => void;
+  onUpdateAccount?: (account: Account) => void;
 }
 
-const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) => {
+const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, onUpdateAccount }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(accounts.filter(a => !a.parentId).map(a => a.id)));
   
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [editingGroup, setEditingGroup] = useState<Account | null>(null);
+  const [editName, setEditName] = useState('');
 
   const toggleGroup = (id: string) => {
     const next = new Set(expandedGroups);
@@ -36,7 +42,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
     setExpandedGroups(next);
   };
 
-  const mainGroups = accounts.filter(a => a.parentId === null);
+  const mainGroups = accounts.filter(a => a.parentId === null).sort((a, b) => a.name.localeCompare(b.name));
 
   const calculateGroupBalance = (parentId: string) => {
     let total = 0;
@@ -59,6 +65,24 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
     if (accountToDelete) {
       deleteAccount(accountToDelete.id);
     }
+  };
+
+  const handleRenameGroup = (group: Account) => {
+    setEditingGroup(group);
+    setEditName(group.name);
+  };
+
+  const handleSaveRename = () => {
+    if (!editingGroup || !editName.trim() || !onUpdateAccount) return;
+    const trimmedName = editName.trim().toUpperCase();
+    const duplicate = accounts.find(a => a.parentId === null && a.id !== editingGroup.id && a.name.toUpperCase() === trimmedName);
+    if (duplicate) {
+      alert(`A parent account group named "${trimmedName}" already exists.`);
+      return;
+    }
+    onUpdateAccount({ ...editingGroup, name: trimmedName });
+    setEditingGroup(null);
+    setEditName('');
   };
 
   const stats = useMemo(() => {
@@ -213,6 +237,15 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
                     {formatCurrency(Math.abs(groupBalance)).replace('₹', '')}
                     <span className="ml-1 text-[10px] font-bold opacity-40">{groupBalance >= 0 ? 'DR' : 'CR'}</span>
                   </p>
+                  {onUpdateAccount && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRenameGroup(group); }}
+                      className="p-1.5 text-slate-300 hover:text-brand hover:bg-emerald-50 rounded-lg transition-all"
+                      title="Rename Group"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <ChevronDown size={18} className={`text-slate-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
               </div>
@@ -246,6 +279,50 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount }) 
           </div>
         )}
       </div>
+
+      {editingGroup && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingGroup(null)} />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-brand text-white rounded-lg flex items-center justify-center shadow-md shadow-emerald-500/10">
+                  <Pencil size={14} />
+                </div>
+                <div>
+                  <h2 className="text-[11px] font-bold text-slate-900 uppercase tracking-widest">Rename Account</h2>
+                  <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Edit display name</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingGroup(null)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-all rounded-lg hover:bg-rose-50">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={e => { e.preventDefault(); handleSaveRename(); }} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Account Name</label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  className="w-full px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[14px] text-slate-900 focus:border-brand focus:bg-white transition-all outline-none uppercase h-[44px] placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case shadow-inner"
+                  placeholder="Enter new name..."
+                />
+              </div>
+              <div className="pt-2 flex gap-3">
+                <button type="button" onClick={() => setEditingGroup(null)} className="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all">
+                  Cancel
+                </button>
+                <button type="submit" className="flex-1 px-4 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2">
+                  <Check size={14} strokeWidth={3} /> Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

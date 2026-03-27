@@ -1,10 +1,10 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Account } from '../types';
 import { BookOpen, Plus, X, RotateCcw, FolderPlus } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
-import HierarchyDropdown from '../components/HierarchyDropdown';
+import LedgerModalSelector from '../components/LedgerModalSelector';
 
 interface AccountMasterProps {
   accounts: Account[];
@@ -27,6 +27,15 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
 
   const getInitialFormData = () => ({ name: '', parentId: '', openingDebit: 0, openingCredit: 0 });
   const [formData, setFormData] = useState<Partial<Account>>(getInitialFormData());
+
+  const groupAccounts = useMemo(() => {
+    const groupIds = new Set<string>();
+    accounts.forEach(a => {
+      if (a.parentId === null) groupIds.add(a.id);
+      if (a.parentId) groupIds.add(a.parentId);
+    });
+    return accounts.filter(a => groupIds.has(a.id) && a.id !== id);
+  }, [accounts, id]);
 
   useEffect(() => {
     if (isEditing) {
@@ -62,6 +71,13 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
   const handleAddGroup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupName.trim()) return;
+
+    const trimmedName = newGroupName.trim().toUpperCase();
+    const duplicate = accounts.find(a => a.parentId === null && a.name.toUpperCase() === trimmedName);
+    if (duplicate) {
+      alert(`A parent account group named "${trimmedName}" already exists.`);
+      return;
+    }
 
     const groupData: Partial<Account> = {
       id: Math.random().toString(36).substr(2, 9),
@@ -168,17 +184,19 @@ const AccountMaster: React.FC<AccountMasterProps> = ({ accounts, onSave, onUpdat
               <label className="text-[11px] font-bold text-slate-600 uppercase tracking-widest px-0.5">Parent Account Group</label>
               <div className={`flex items-center gap-2 ${inputHeight}`}>
                 <div className="flex-1 h-full">
-                  <HierarchyDropdown 
-                    accounts={accounts} 
+                  <LedgerModalSelector 
+                    accounts={groupAccounts} 
                     selectedId={formData.parentId || null} 
                     onChange={id => setFormData({ ...formData, parentId: id })} 
-                    excludeId={id} 
+                    label=""
                     placeholder="Select parent group..." 
+                    triggerHeight={inputHeight}
+                    allowGroups={true}
                   />
                 </div>
                 <button 
                   type="button" 
-                  onClick={() => setIsGroupModalOpen(true)} 
+                  onClick={() => { setNewGroupName(''); setIsGroupModalOpen(true); }}
                   className="w-[44px] h-full bg-slate-50 text-slate-400 rounded-lg flex items-center justify-center hover:bg-brand hover:text-white transition-all border border-slate-200 shadow-sm active:scale-95"
                   title="Create New Group"
                 >

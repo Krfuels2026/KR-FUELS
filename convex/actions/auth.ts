@@ -166,6 +166,35 @@ export const changePassword = action({
   },
 });
 
+// Reset password by super_admin (no old password required)
+export const resetPassword = action({
+  args: {
+    token: v.string(),
+    userId: v.id("users"),
+    newPassword: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const decoded = jwt.verify(args.token, getJwtSecret(), { algorithms: [JWT_ALGORITHM] }) as { role: string };
+    if (decoded.role !== "super_admin") throw new Error("Only super_admin can reset passwords");
+
+    const user = await ctx.runQuery(internal.queries.users.getUserById, {
+      userId: args.userId,
+    });
+    if (!user) throw new Error("User not found");
+
+    const passwordCheck = validatePasswordComplexity(args.newPassword);
+    if (!passwordCheck.valid) throw new Error(passwordCheck.message);
+
+    const newPasswordHash = await bcrypt.hash(args.newPassword, 12);
+    await ctx.runMutation(internal.mutations.users.updatePassword, {
+      userId: args.userId,
+      newPasswordHash,
+    });
+
+    return { success: true };
+  },
+});
+
 // Verify JWT token (algorithm locked to HS256)
 export const verifyToken = action({
   args: { token: v.string() },
