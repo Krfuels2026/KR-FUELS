@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "cd apps && vite",
-    "build": "cd apps && tsc && vite build",
+    "build": "cd apps && vite build",
+    "typecheck": "cd apps && tsc --noEmit",
     "preview": "cd apps && vite preview"
   },
   "dependencies": {
