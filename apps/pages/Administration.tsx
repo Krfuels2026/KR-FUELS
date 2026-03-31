@@ -2,21 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useAction } from 'convex/react';
 import { api as convexApi } from '../../convex/_generated/api';
 import { getToken } from '../lib/auth';
-import { 
-  Building2, 
-  Users, 
-  Plus, 
-  Trash2, 
-  ShieldCheck, 
-  ShieldAlert, 
-  MapPin, 
-  UserPlus, 
+import {
+  Building2,
+  Users,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  ShieldAlert,
+  MapPin,
+  UserPlus,
   Lock,
   Mail,
   CheckCircle2,
   X,
   KeyRound,
-  Settings2
+  Settings2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 const Administration: React.FC = () => {
@@ -25,16 +27,19 @@ const Administration: React.FC = () => {
   const [isAddingUser, setIsAddingUser] = useState(false);
 
   const [newBunk, setNewBunk] = useState({ name: '', code: '', location: '' });
-  const [newUser, setNewUser] = useState({ 
-    username: '', password: '', name: '', 
-    role: 'admin' as 'admin' | 'super_admin', 
+  const [newUser, setNewUser] = useState({
+    username: '', password: '', name: '',
+    role: 'admin' as 'admin' | 'super_admin',
     accessibleBunkIds: [] as string[]
   });
+  const [showNewUserPassword, setShowNewUserPassword] = useState(false);
 
   // Change password modal state
   const [changePwUser, setChangePwUser] = useState<{ id: string; name: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Change bunk access modal state
   const [changeBunkUser, setChangeBunkUser] = useState<{ id: string; name: string; role: string } | null>(null);
@@ -224,13 +229,13 @@ const Administration: React.FC = () => {
       </div>
 
       <div className="flex gap-1 bg-slate-100 p-1 md:p-1.5 rounded-2xl w-fit mb-4 md:mb-8 shadow-inner">
-        <button 
+        <button
           onClick={() => setActiveTab('bunks')}
           className={`px-4 py-2 md:px-8 md:py-2.5 rounded-xl font-bold text-[10px] md:text-[12px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2.5 ${activeTab === 'bunks' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
         >
           <Building2 size={14} className="md:w-4 md:h-4" /> Fuel Stations
         </button>
-        <button 
+        <button
           onClick={() => setActiveTab('users')}
           className={`px-4 py-2 md:px-8 md:py-2.5 rounded-xl font-bold text-[10px] md:text-[12px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2.5 ${activeTab === 'users' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
         >
@@ -242,7 +247,7 @@ const Administration: React.FC = () => {
         <div className="space-y-4 md:space-y-6">
           <div className="flex justify-between items-center px-1 flex-wrap gap-2">
             <h2 className="text-[11px] md:text-[14px] font-black text-slate-800 uppercase tracking-widest">Active Station List</h2>
-            <button 
+            <button
               onClick={() => setIsAddingBunk(true)}
               className="px-3 py-2 md:px-6 md:py-2.5 bg-brand text-white rounded-xl font-bold text-[9px] md:text-[11px] uppercase tracking-widest flex items-center gap-1.5 md:gap-2 hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
             >
@@ -278,8 +283,8 @@ const Administration: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center px-1">
             <h2 className="text-[14px] font-black text-slate-800 uppercase tracking-widest">System User Directory</h2>
-            <button 
-              onClick={() => { setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] }); setIsAddingUser(true); }}
+            <button
+              onClick={() => { setNewUser({ username: '', password: '', name: '', role: 'admin', accessibleBunkIds: [] }); setShowNewUserPassword(false); setIsAddingUser(true); }}
               className="px-6 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-95"
             >
               <UserPlus size={16} strokeWidth={3} /> Create Admin
@@ -343,7 +348,7 @@ const Administration: React.FC = () => {
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => { setChangePwUser({ id: user._id, name: user.name }); setNewPassword(''); setConfirmPassword(''); }}
+                          onClick={() => { setChangePwUser({ id: user._id, name: user.name }); setNewPassword(''); setConfirmPassword(''); setShowNewPassword(false); setShowConfirmPassword(false); }}
                           className="p-2 text-slate-300 hover:text-amber-500 transition-colors" title="Change Password"
                         >
                           <KeyRound size={16} />
@@ -380,16 +385,16 @@ const Administration: React.FC = () => {
             <div className="p-8 space-y-5">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Bunk Name</label>
-                <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. KR FUELS - COIMBATORE" value={newBunk.name} onChange={e => setNewBunk({...newBunk, name: e.target.value})} />
+                <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. KR FUELS - COIMBATORE" value={newBunk.name} onChange={e => setNewBunk({ ...newBunk, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Station Code</label>
-                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="CBE01" value={newBunk.code} onChange={e => setNewBunk({...newBunk, code: e.target.value})} />
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="CBE01" value={newBunk.code} onChange={e => setNewBunk({ ...newBunk, code: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Location</label>
-                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="CITY NAME" value={newBunk.location} onChange={e => setNewBunk({...newBunk, location: e.target.value})} />
+                  <input required type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold uppercase tracking-tight focus:border-brand focus:bg-white transition-all outline-none" placeholder="CITY NAME" value={newBunk.location} onChange={e => setNewBunk({ ...newBunk, location: e.target.value })} />
                 </div>
               </div>
             </div>
@@ -413,8 +418,8 @@ const Administration: React.FC = () => {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Display Name</label>
                 <div className="relative">
-                   <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                   <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="ARUN" value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} />
+                  <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                  <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="ARUN" value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -422,14 +427,17 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Username</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. ARUN_ADMIN" autoComplete="off" value={newUser.username} onChange={e => setNewUser({...newUser, username: e.target.value})} />
+                    <input required type="text" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="E.G. ARUN_ADMIN" autoComplete="off" value={newUser.username} onChange={e => setNewUser({ ...newUser, username: e.target.value })} />
                   </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                    <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} />
+                    <input required type={showNewUserPassword ? "text" : "password"} className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newUser.password} onChange={e => setNewUser({ ...newUser, password: e.target.value })} />
+                    <button type="button" onClick={() => setShowNewUserPassword(!showNewUserPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand transition-colors">
+                      {showNewUserPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -437,22 +445,22 @@ const Administration: React.FC = () => {
               <div className="space-y-1.5 pt-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">System Role</label>
                 <div className="flex gap-4">
-                   <button 
-                    type="button" 
-                    onClick={() => setNewUser({...newUser, role: 'admin'})}
+                  <button
+                    type="button"
+                    onClick={() => setNewUser({ ...newUser, role: 'admin' })}
                     className={`flex-1 p-4 rounded-2xl border transition-all text-left ${newUser.role === 'admin' ? 'bg-white border-brand ring-4 ring-emerald-50' : 'bg-slate-50 border-slate-200 opacity-60'}`}
-                   >
-                     <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight">Branch Admin</p>
-                     <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Specific Bunk Access</p>
-                   </button>
-                   <button 
-                    type="button" 
-                    onClick={() => setNewUser({...newUser, role: 'super_admin'})}
+                  >
+                    <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight">Branch Admin</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Specific Bunk Access</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewUser({ ...newUser, role: 'super_admin' })}
                     className={`flex-1 p-4 rounded-2xl border transition-all text-left ${newUser.role === 'super_admin' ? 'bg-white border-brand ring-4 ring-emerald-50' : 'bg-slate-50 border-slate-200 opacity-60'}`}
-                   >
-                     <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight">Super Admin</p>
-                     <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Full System Access</p>
-                   </button>
+                  >
+                    <p className="text-[12px] font-black text-slate-900 uppercase tracking-tight">Super Admin</p>
+                    <p className="text-[9px] font-bold text-slate-500 uppercase mt-1">Full System Access</p>
+                  </button>
                 </div>
               </div>
 
@@ -461,18 +469,18 @@ const Administration: React.FC = () => {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Bunk Access Permissions</label>
                   <div className="grid grid-cols-1 gap-2">
                     {bunks.map(b => (
-                      <div 
-                        key={b.id} 
+                      <div
+                        key={b.id}
                         onClick={() => toggleBunkForUser(b.id)}
                         className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${newUser.accessibleBunkIds?.includes(b.id) ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}
                       >
-                         <div className="flex items-center gap-3">
-                            <Building2 size={14} className={newUser.accessibleBunkIds?.includes(b.id) ? 'text-emerald-600' : 'text-slate-400'} />
-                            <span className={`text-[11px] font-black uppercase tracking-tight ${newUser.accessibleBunkIds?.includes(b.id) ? 'text-emerald-900' : 'text-slate-600'}`}>{b.name}</span>
-                         </div>
-                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${newUser.accessibleBunkIds?.includes(b.id) ? 'bg-brand border-brand' : 'bg-white border-slate-200'}`}>
-                           {newUser.accessibleBunkIds?.includes(b.id) && <Plus size={12} className="text-white rotate-45" />}
-                         </div>
+                        <div className="flex items-center gap-3">
+                          <Building2 size={14} className={newUser.accessibleBunkIds?.includes(b.id) ? 'text-emerald-600' : 'text-slate-400'} />
+                          <span className={`text-[11px] font-black uppercase tracking-tight ${newUser.accessibleBunkIds?.includes(b.id) ? 'text-emerald-900' : 'text-slate-600'}`}>{b.name}</span>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${newUser.accessibleBunkIds?.includes(b.id) ? 'bg-brand border-brand' : 'bg-white border-slate-200'}`}>
+                          {newUser.accessibleBunkIds?.includes(b.id) && <Plus size={12} className="text-white rotate-45" />}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -509,14 +517,20 @@ const Administration: React.FC = () => {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">New Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                  <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                  <input required type={showNewPassword ? "text" : "password"} className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="MIN 8 CHARACTERS" autoComplete="new-password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand transition-colors">
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Confirm Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                  <input required type="password" className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="RE-ENTER PASSWORD" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                  <input required type={showConfirmPassword ? "text" : "password"} className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[13px] font-bold focus:border-brand focus:bg-white transition-all outline-none" placeholder="RE-ENTER PASSWORD" autoComplete="new-password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand transition-colors">
+                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-1">Must be 8+ characters, include 1 uppercase letter & 1 number</p>
@@ -551,8 +565,8 @@ const Administration: React.FC = () => {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Bunk Access Permissions</label>
                 <div className="grid grid-cols-1 gap-2">
                   {bunks.map(b => (
-                    <div 
-                      key={b.id} 
+                    <div
+                      key={b.id}
                       onClick={() => toggleEditBunk(b.id)}
                       className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${editBunkIds.includes(b.id) ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}
                     >

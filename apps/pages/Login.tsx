@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Lock, Mail, LogIn, AlertCircle, Fuel, BarChart3, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, LogIn, AlertCircle, Fuel, BarChart3, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { User } from '../types';
 import { useLogin } from '../convex-api';
 import { storeAuthData } from '../lib/auth';
@@ -23,6 +23,7 @@ const KRLogoFull = ({ className = "" }: { className?: string }) => (
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,7 +36,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       // Call Convex login action (returns JWT token)
       const userData = await login({ username, password });
-      
+
       // Store JWT token and user data securely
       storeAuthData(
         userData.token,
@@ -48,7 +49,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         },
         userData.expiresIn || '24h'
       );
-      
+
       // Convert Convex user data to app User type
       const user: User = {
         username: userData.username,
@@ -56,7 +57,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         role: userData.role,
         accessibleBunkIds: userData.accessibleBunkIds,
       };
-      
+
       onLogin(user);
     } catch (err: any) {
       setError(err?.message || 'Invalid username or password');
@@ -68,11 +69,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen bg-brand-light flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-[1100px] min-h-[650px] bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col md:flex-row border border-brand/5">
-        
+
         <div className="w-full md:w-1/2 bg-brand-light p-8 md:p-16 flex flex-col items-center justify-center text-center relative overflow-hidden border-b md:border-b-0 md:border-r border-brand/5">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand/5 rounded-full blur-3xl" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand/10 rounded-full blur-3xl" />
-          
+
           <div className="relative z-10 w-full max-w-[400px]">
             <div className="mb-12 relative">
               <div className="bg-white p-8 rounded-[40px] shadow-2xl shadow-green-500/5 inline-block">
@@ -130,13 +131,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl text-[14px] font-bold text-slate-900 outline-none focus:border-brand focus:ring-4 focus:ring-brand/5 transition-all placeholder:text-slate-300 shadow-sm"
+                    className="w-full pl-12 pr-12 py-4 bg-white border-2 border-slate-100 rounded-2xl text-[14px] font-bold text-slate-900 outline-none focus:border-brand focus:ring-4 focus:ring-brand/5 transition-all placeholder:text-slate-300 shadow-sm"
                     placeholder="••••••••••••"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-brand transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 
