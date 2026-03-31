@@ -103,7 +103,7 @@ const Administration: React.FC = () => {
     try {
       await registerUser({
         token: tok(),
-        username: newUser.username.toLowerCase(),
+        username: newUser.username.trim(),
         password: newUser.password,
         name: newUser.name,
         role: newUser.role,
