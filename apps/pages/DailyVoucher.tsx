@@ -47,7 +47,8 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
 
   const openingBalance = useMemo(() => {
     const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
-    const pastVouchersSum = vouchers.filter(v => v.date < date).reduce((sum, v) => sum + (v.credit - v.debit), 0);
+    // Past CR entries grew the CR balance (subtract), past DR entries reduced it (add)
+    const pastVouchersSum = vouchers.filter(v => v.date < date).reduce((sum, v) => sum + (v.debit - v.credit), 0);
     return openingBalancesSum + pastVouchersSum;
   }, [accounts, vouchers, date]);
 
@@ -58,11 +59,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
     }), { debit: 0, credit: 0 });
   }, [rows]);
 
-  // Tally standard: Cash is an asset (DR balance).
-  // CR column entries = contra account credited → Cash DEBITED → cash IN (inflow)
-  // DR column entries = contra account debited  → Cash CREDITED → cash OUT (outflow)
-  // Closing = Opening + CR(inflows) − DR(outflows)
-  const closingBalance = openingBalance + totals.credit - totals.debit;
+  // Opening + Inflow − Outflow
+  // CR entries grow the CR balance (subtract from internal signed value)
+  // DR entries reduce the CR balance (add to internal signed value)
+  const closingBalance = openingBalance - totals.credit + totals.debit;
 
   const handleAddRow = () => {
     setRows([...rows, { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }]);

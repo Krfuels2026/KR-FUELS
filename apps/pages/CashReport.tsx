@@ -251,23 +251,19 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   const reportData = useMemo(() => {
     const periodVouchers = vouchers.filter(v => v.date >= range.from && v.date <= range.to);
     
-    const openingBalancesSum = accounts.reduce((sum, a) => {
-        if (a.parentId !== null) {
-            return sum + (a.openingDebit - a.openingCredit);
-        }
-        return sum;
-    }, 0);
+    // Include ALL accounts (root + child) in opening balance
+    const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
     const pastVouchers = vouchers.filter(v => v.date < range.from);
-    // Tally standard: CR column = contra credited → Cash debited → cash IN (inflow)
-    //                 DR column = contra debited  → Cash credited → cash OUT (outflow)
-    // Past voucher effect on opening: sum(CR - DR)
-    const pastVouchersSum = pastVouchers.reduce((sum, v) => sum + (v.credit - v.debit), 0);
-    
+    // Past CR entries grew the CR balance (subtract), past DR entries reduced it (add)
+    const pastVouchersSum = pastVouchers.reduce((sum, v) => sum + (v.debit - v.credit), 0);
+
     const openingBalance = openingBalancesSum + pastVouchersSum;
     const totalDr = periodVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = periodVouchers.reduce((sum, v) => sum + v.credit, 0);
-    // Closing = Opening + Inflows(CR) − Outflows(DR)
-    const closingBalance = openingBalance + totalCr - totalDr;
+    // Opening + Inflow − Outflow
+    // CR entries grow the CR balance (subtract from internal signed value)
+    // DR entries reduce the CR balance (add to internal signed value)
+    const closingBalance = openingBalance - totalCr + totalDr;
 
     return {
       openingBalance,
