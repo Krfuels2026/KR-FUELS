@@ -251,13 +251,11 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
   const reportData = useMemo(() => {
     const periodVouchers = vouchers.filter(v => v.date >= range.from && v.date <= range.to);
     
-    // Include ALL accounts (root + child) in opening balance
-    const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
+    // Opening balances excluded from calculations — stored for reference only
     const pastVouchers = vouchers.filter(v => v.date < range.from);
-    // Past CR entries grew the CR balance (subtract), past DR entries reduced it (add)
     const pastVouchersSum = pastVouchers.reduce((sum, v) => sum + (v.debit - v.credit), 0);
 
-    const openingBalance = openingBalancesSum + pastVouchersSum;
+    const openingBalance = pastVouchersSum;
     const totalDr = periodVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = periodVouchers.reduce((sum, v) => sum + v.credit, 0);
     // Opening + Inflow − Outflow
