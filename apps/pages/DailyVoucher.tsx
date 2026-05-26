@@ -36,7 +36,11 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   const dateInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLTableSectionElement>(null);
 
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  });
   const [rows, setRows] = useState<BatchRow[]>([
     { id: Math.random().toString(36).substr(2, 9), accountId: '', description: '', debit: 0, credit: 0 }
   ]);
@@ -46,10 +50,9 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   const ignoreHashChangeRef = useRef(false);
 
   const openingBalance = useMemo(() => {
-    const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
-    // Past CR entries grew the CR balance (subtract), past DR entries reduced it (add)
+    // Opening balances excluded from calculations — stored for reference only
     const pastVouchersSum = vouchers.filter(v => v.date < date).reduce((sum, v) => sum + (v.debit - v.credit), 0);
-    return openingBalancesSum + pastVouchersSum;
+    return pastVouchersSum;
   }, [accounts, vouchers, date]);
 
   const totals = useMemo(() => {
@@ -71,34 +74,30 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
 
   const focusCell = (rowIndex: number, colIndex: number) => {
     if (!tableRef.current) return;
-    const el = tableRef.current.querySelector<HTMLInputElement>(`[data-row="${rowIndex}"][data-col="${colIndex}"]`);
-    if (el) { el.focus(); el.select(); }
+    const el = tableRef.current.querySelector<HTMLElement>(`[data-row="${rowIndex}"][data-col="${colIndex}"]`);
+    if (el) { el.focus(); if ((el as any).select) (el as any).select(); }
   };
 
   const handleCellKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, colIndex: number) => {
     const row = rows[rowIndex];
     if (e.key === 'Enter') {
       e.preventDefault();
-      const nextCol = colIndex + 1;
-      if (nextCol <= 2) {
-        focusCell(rowIndex, nextCol);
-      } else {
-        // On last column (Debit), validate before moving to next row
-        if (!row.description.trim()) {
-          focusCell(rowIndex, 0);
-          return;
-        }
-        if (row.credit <= 0 && row.debit <= 0) {
-          focusCell(rowIndex, 1);
-          return;
-        }
-        // Row is complete, move to next row
-        if (rowIndex + 1 < rows.length) {
-          focusCell(rowIndex + 1, 0);
+      if (colIndex === 1) {
+        // Description → Credit
+        focusCell(rowIndex, 2);
+      } else if (colIndex === 2) {
+        // Credit: if filled, skip Debit and go to next row; else move to Debit
+        if (row.credit > 0) {
+          if (!row.description.trim()) { focusCell(rowIndex, 1); return; }
+          if (rowIndex + 1 < rows.length) { focusCell(rowIndex + 1, 0); } else { handleAddRow(); setTimeout(() => focusCell(rowIndex + 1, 0), 50); }
         } else {
-          handleAddRow();
-          setTimeout(() => focusCell(rowIndex + 1, 0), 50);
+          focusCell(rowIndex, 3);
         }
+      } else if (colIndex === 3) {
+        // Debit: validate and go to next row
+        if (!row.description.trim()) { focusCell(rowIndex, 1); return; }
+        if (row.credit <= 0 && row.debit <= 0) { focusCell(rowIndex, 2); return; }
+        if (rowIndex + 1 < rows.length) { focusCell(rowIndex + 1, 0); } else { handleAddRow(); setTimeout(() => focusCell(rowIndex + 1, 0), 50); }
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
@@ -243,17 +242,17 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
 
   return (
     <div className="animate-in fade-in duration-500 max-w-[1000px] mx-auto flex flex-col h-full min-h-0 pb-6">
-      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-4 md:space-y-6 pt-2 pb-4 md:pb-6">
+      <div className="sticky top-0 bg-[#f8fafc] z-20 space-y-2 md:space-y-3 pt-1 pb-2 md:pb-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-4">
           <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Daily Voucher</h1>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 md:p-5">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 md:p-3">
           <div className="flex flex-col md:flex-row items-stretch gap-3 md:gap-5">
-            <div className="flex flex-col justify-center space-y-1.5 md:space-y-2 flex-shrink-0">
+            <div className="flex flex-col justify-center space-y-1 flex-shrink-0">
               <label className="text-[8px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Transaction Date</label>
               <div
-                className="flex items-center gap-2 md:gap-3 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-2 md:px-5 md:py-3 rounded-xl hover:border-brand transition-all group"
+                className="flex items-center gap-2 cursor-pointer bg-slate-50 border border-slate-200 px-3 py-1.5 md:px-4 md:py-2 rounded-xl hover:border-brand transition-all group"
                 onClick={() => dateInputRef.current?.showPicker()}
               >
                 <Calendar size={14} className="md:w-4 md:h-4 text-slate-400 group-hover:text-brand transition-colors" />
@@ -265,23 +264,23 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
             <div className="hidden md:block w-px bg-slate-100 self-stretch"></div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 flex-1">
-              <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[8px] md:text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1 md:mb-2">Opening Balance</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-amber-500 rounded-xl px-2 py-1.5 md:px-3 md:py-2 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-0.5">Opening Balance</p>
                 <p className="text-[12px] md:text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
                   {formatCurrency(Math.abs(openingBalance))}
                   <span className="text-[7px] md:text-[9px] ml-0.5 md:ml-1 font-bold text-slate-400">{openingBalance >= 0 ? 'DR' : 'CR'}</span>
                 </p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[8px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1 md:mb-2">Total Inflow</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-emerald-500 rounded-xl px-2 py-1.5 md:px-3 md:py-2 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-0.5">Total Inflow</p>
                 <p className="text-[12px] md:text-[16px] font-black text-emerald-600 font-mono tabular-nums tracking-tighter leading-none">+{formatCurrency(totals.credit)}</p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[8px] md:text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-1 md:mb-2">Total Outflow</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-rose-500 rounded-xl px-2 py-1.5 md:px-3 md:py-2 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-rose-500 uppercase tracking-widest mb-0.5">Total Outflow</p>
                 <p className="text-[12px] md:text-[16px] font-black text-rose-500 font-mono tabular-nums tracking-tighter leading-none">-{formatCurrency(totals.debit)}</p>
               </div>
-              <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-xl px-2 py-2 md:px-4 md:py-3 flex flex-col justify-between shadow-sm">
-                <p className="text-[8px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1 md:mb-2">Closing Cash</p>
+              <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 rounded-xl px-2 py-1.5 md:px-3 md:py-2 flex flex-col justify-between shadow-sm">
+                <p className="text-[8px] md:text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-0.5">Closing Cash</p>
                 <p className="text-[12px] md:text-[16px] font-black text-slate-900 font-mono tabular-nums tracking-tighter leading-none">
                   {formatCurrency(Math.abs(closingBalance))}
                   <span className="text-[7px] md:text-[9px] ml-0.5 md:ml-1 font-bold text-slate-400">{closingBalance >= 0 ? 'DR' : 'CR'}</span>
@@ -303,34 +302,35 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
           <table className="w-full border-collapse">
             <thead className="sticky top-0 z-10">
               <tr className="bg-slate-50/80 border-b border-slate-100">
-                <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[280px]">Ledger Account</th>
-                <th className="px-5 py-3 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest">Description</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Credit (CR)</th>
-                <th className="px-5 py-3 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Debit (DR)</th>
-                <th className="px-2 py-3 w-[44px]"></th>
+                <th className="px-4 py-2 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[280px]">Ledger Account</th>
+                <th className="px-4 py-2 text-left text-[11px] font-bold text-slate-600 uppercase tracking-widest">Description</th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Credit (CR)</th>
+                <th className="px-4 py-2 text-right text-[11px] font-bold text-slate-600 uppercase tracking-widest w-[150px]">Debit (DR)</th>
+                <th className="px-2 py-2 w-[44px]"></th>
               </tr>
             </thead>
             <tbody ref={tableRef} className="divide-y divide-slate-50">
               {rows.map((row, rowIndex) => (
                 <tr key={row.id} className="group hover:bg-slate-50/20 transition-colors">
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1">
                     <LedgerModalSelector
                       label="" accounts={accounts} selectedId={row.accountId}
-                      onChange={id => updateRow(row.id, 'accountId', id)}
-                      placeholder="Search ledger account..." compact={true} triggerHeight="h-[36px]"
+                      onChange={id => { updateRow(row.id, 'accountId', id); setTimeout(() => focusCell(rowIndex, 1), 50); }}
+                      placeholder="Search ledger account..." compact={true} triggerHeight="h-[30px]"
+                      rowIndex={rowIndex} colIndex={0}
                     />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1">
                     <input
                       type="text" value={row.description}
                       onChange={e => updateRow(row.id, 'description', e.target.value)}
-                      onKeyDown={e => handleCellKeyDown(e, rowIndex, 0)}
-                      data-row={rowIndex} data-col={0}
+                      onKeyDown={e => handleCellKeyDown(e, rowIndex, 1)}
+                      data-row={rowIndex} data-col={1}
                       placeholder="Enter transaction details..."
-                      className="w-full px-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg text-[13px] font-medium text-slate-800 outline-none focus:border-brand focus:bg-white transition-all uppercase h-[36px] placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case"
+                      className="w-full px-3 py-1 bg-slate-50/50 border border-slate-100 rounded-lg text-[13px] font-medium text-slate-800 outline-none focus:border-brand focus:bg-white transition-all uppercase h-[30px] placeholder:text-slate-400 placeholder:text-[11px] placeholder:normal-case"
                     />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1">
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-green-700 font-bold text-[10px]">₹</span>
                       <input
@@ -339,14 +339,14 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                         step="0.01"
                         value={row.credit === 0 ? '' : row.credit || ''}
                         onChange={e => updateRow(row.id, 'credit', e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
-                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 1)}
-                        data-row={rowIndex} data-col={1}
+                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 2)}
+                        data-row={rowIndex} data-col={2}
                         placeholder="0.00"
-                        className="w-full pl-6 pr-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-green-800 text-right outline-none focus:border-brand focus:bg-white transition-all h-[36px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
+                        className="w-full pl-6 pr-3 py-1 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-green-800 text-right outline-none focus:border-brand focus:bg-white transition-all h-[30px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
                       />
                     </div>
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-1">
                     <div className="relative">
                       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-500 font-bold text-[10px]">₹</span>
                       <input
@@ -355,20 +355,20 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
                         step="0.01"
                         value={row.debit === 0 ? '' : row.debit || ''}
                         onChange={e => updateRow(row.id, 'debit', e.target.value === '' ? 0 : Math.max(0, Number(e.target.value)))}
-                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 2)}
-                        data-row={rowIndex} data-col={2}
+                        onKeyDown={e => handleCellKeyDown(e, rowIndex, 3)}
+                        data-row={rowIndex} data-col={3}
                         placeholder="0.00"
-                        className="w-full pl-6 pr-3 py-1.5 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-rose-600 text-right outline-none focus:border-rose-400 focus:bg-white transition-all h-[36px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
+                        className="w-full pl-6 pr-3 py-1 bg-slate-50/50 border border-slate-100 rounded-lg font-bold text-[13px] text-rose-600 text-right outline-none focus:border-rose-400 focus:bg-white transition-all h-[30px] font-mono placeholder:text-slate-400 placeholder:text-[11px]"
                       />
                     </div>
                   </td>
-                  <td className="px-2 py-2 text-center">
+                  <td className="px-2 py-1 text-center">
                     <button onClick={() => handleRemoveRow(row.id)} className="p-1.5 text-slate-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 transition-colors"><Trash2 size={16} /></button>
                   </td>
                 </tr>
               ))}
               <tr>
-                <td colSpan={5} className="px-5 py-3 border-t border-slate-50">
+                <td colSpan={5} className="px-4 py-2 border-t border-slate-50">
                   <button onClick={handleAddRow} className="flex items-center gap-1.5 px-4 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-brand rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all"><Plus size={12} strokeWidth={3} /> Add Entry Line</button>
                 </td>
               </tr>
@@ -377,7 +377,7 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 md:gap-6 no-print flex-shrink-0 mt-4">
+      <div className="flex items-center justify-center gap-3 md:gap-6 no-print flex-shrink-0 mt-2">
         <button onClick={handleReset} className="flex items-center gap-1.5 md:gap-2 px-3 py-2 md:px-5 md:py-2.5 text-[9px] md:text-[11px] font-bold text-slate-400 hover:text-rose-600 uppercase tracking-widest rounded-xl hover:bg-rose-50 transition-all group"><RotateCcw size={13} className="md:w-[15px] md:h-[15px] group-hover:-rotate-90 transition-transform" /> Reset</button>
         <button
           onClick={handlePost}

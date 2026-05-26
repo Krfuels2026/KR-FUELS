@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Account, Voucher } from '../types';
 import { calculateLedger, formatCurrency, formatDateToDDMMYYYY } from '../utils';
-import LedgerModalSelector from '../components/LedgerModalSelector';
+import LedgerModalSelector, { ALL_ACCOUNTS_ID } from '../components/LedgerModalSelector';
 import { FileSpreadsheet, FileText, Calendar } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -32,6 +32,8 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     };
   });
 
+  const [showDatewise, setShowDatewise] = useState(true);
+
   const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) {
       try {
@@ -46,11 +48,15 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     }
   };
 
-  const selectedAccount = accounts.find(a => a.id === filters.accountId);
+  const selectedAccount = filters.accountId === ALL_ACCOUNTS_ID
+    ? { id: ALL_ACCOUNTS_ID, name: 'All Accounts', parentId: null, openingDebit: 0, openingCredit: 0, createdAt: 0, bunkId: '' } as Account
+    : accounts.find(a => a.id === filters.accountId);
+
   const isParentAccount = useMemo(() => {
     if (!selectedAccount) return false;
+    if (filters.accountId === ALL_ACCOUNTS_ID) return true;
     return accounts.some(a => a.parentId === selectedAccount.id);
-  }, [selectedAccount, accounts]);
+  }, [selectedAccount, accounts, filters.accountId]);
 
   const accountNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -58,8 +64,61 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     return map;
   }, [accounts]);
 
+  const showAccountColumn = isParentAccount && showDatewise;
+
+  const groupedReportData = useMemo(() => {
+    if (showDatewise || !isParentAccount || !filters.accountId) return null;
+
+    const getLeafIds = (accId: string): string[] => {
+      const children = accounts.filter(a => a.parentId === accId);
+      if (children.length === 0) return [accId];
+      return children.flatMap(c => getLeafIds(c.id));
+    };
+
+    const leafIds =
+      filters.accountId === ALL_ACCOUNTS_ID
+        ? accounts.filter(a => !accounts.some(b => b.parentId === a.id)).map(a => a.id)
+        : getLeafIds(filters.accountId);
+
+    const getHierarchyPath = (accId: string): string => {
+      const acc = accounts.find(a => a.id === accId);
+      if (!acc) return '';
+      return acc.parentId
+        ? getHierarchyPath(acc.parentId) + '/' + acc.name.toLowerCase()
+        : acc.name.toLowerCase();
+    };
+
+    return [...leafIds]
+      .sort((a, b) => getHierarchyPath(a).localeCompare(getHierarchyPath(b)))
+      .map(accId => {
+        const account = accounts.find(a => a.id === accId);
+        if (!account) return null;
+        const accVouchers = vouchers.filter(v => v.accountId === accId);
+        const entries = calculateLedger(account, accVouchers, filters.fromDate, filters.toDate);
+        if (entries.length === 0) return null;
+        const grpDr = entries.reduce((s, e) => s + e.debit, 0);
+        const grpCr = entries.reduce((s, e) => s + e.credit, 0);
+        const last = entries[entries.length - 1];
+        return { account, entries, grpDr, grpCr, closingBalance: last.balance, closingBalanceType: last.balanceType };
+      })
+      .filter((g): g is NonNullable<typeof g> => g !== null);
+  }, [showDatewise, isParentAccount, filters, accounts, vouchers]);
+
   const reportData = useMemo(() => {
     if (!selectedAccount) return [];
+
+    if (filters.accountId === ALL_ACCOUNTS_ID) {
+      const allAccountsObj: Account = {
+        id: ALL_ACCOUNTS_ID,
+        name: 'All Accounts',
+        parentId: null,
+        openingDebit: 0,
+        openingCredit: 0,
+        createdAt: 0,
+        bunkId: '',
+      };
+      return calculateLedger(allAccountsObj, vouchers, filters.fromDate, filters.toDate);
+    }
 
     const getDescendantIds = (accId: string): string[] => {
       let ids = [accId];
@@ -73,13 +132,11 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     const targetAccountIds = getDescendantIds(filters.accountId);
     const targetAccounts = accounts.filter(a => targetAccountIds.includes(a.id));
 
-    const totalOpeningDebit = targetAccounts.reduce((sum, a) => sum + a.openingDebit, 0);
-    const totalOpeningCredit = targetAccounts.reduce((sum, a) => sum + a.openingCredit, 0);
-
+    // Opening balances excluded from calculations — stored for reference only
     const consolidatedAccount: Account = {
       ...selectedAccount,
-      openingDebit: totalOpeningDebit,
-      openingCredit: totalOpeningCredit
+      openingDebit: 0,
+      openingCredit: 0,
     };
 
     const filteredVouchers = vouchers.filter(v => targetAccountIds.includes(v.accountId));
@@ -266,8 +323,8 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   };
 
   return (
-    <div className="w-full mx-auto pb-10 max-w-[1400px]">
-      <div className="sticky top-0 -mx-5 px-5 pt-0 pb-4 md:pb-6 bg-[#f8fafc] z-10 no-print space-y-4 md:space-y-6">
+    <div className="w-full mx-auto pb-4 max-w-[1400px]">
+      <div className="sticky top-0 -mx-5 px-5 pt-0 pb-2 md:pb-3 bg-[#f8fafc] z-10 no-print space-y-2 md:space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex flex-col">
             <h1 className="text-[14px] md:text-[18px] font-black text-slate-900 tracking-tight uppercase">Ledger Report</h1>
@@ -288,8 +345,8 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-4 py-4 md:px-8 md:py-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 px-4 py-3 md:px-6 md:py-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="flex flex-col h-full">
                <LedgerModalSelector
                  label="SELECT ACCOUNT"
@@ -298,15 +355,16 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
                  onChange={id => setFilters({ ...filters, accountId: id })}
                  placeholder="SEARCH LEDGER..."
                  compact={true}
-                 labelClassName="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1 mb-2"
-                 triggerHeight="h-[48px]"
+                 labelClassName="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1 mb-1"
+                 triggerHeight="h-[36px]"
                  allowGroups={true}
+                 allowSelectAll={true}
                />
             </div>
             
-            <div className="space-y-2 flex-1">
+            <div className="space-y-1 flex-1">
               <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">From Date</label>
-              <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(fromDateRef)}>
+              <div className="relative group cursor-pointer h-[36px]" onClick={() => handleOpenPicker(fromDateRef)}>
                 <div className="absolute inset-0 px-5 bg-white border border-[#e2e8f0] rounded-xl font-bold text-[14px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-sm">
                   {formatDateToDDMMYYYY(filters.fromDate)}
                 </div>
@@ -323,9 +381,9 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
               </div>
             </div>
 
-            <div className="space-y-2 flex-1">
+            <div className="space-y-1 flex-1">
               <label className="text-[11px] font-bold text-[#64748b] uppercase tracking-widest px-1">To Date</label>
-              <div className="relative group cursor-pointer h-[48px]" onClick={() => handleOpenPicker(toDateRef)}>
+              <div className="relative group cursor-pointer h-[36px]" onClick={() => handleOpenPicker(toDateRef)}>
                 <div className="absolute inset-0 px-5 bg-white border border-[#e2e8f0] rounded-xl font-bold text-[14px] text-slate-900 flex items-center z-10 transition-all group-hover:border-slate-300 shadow-sm">
                   {formatDateToDDMMYYYY(filters.toDate)}
                 </div>
@@ -342,6 +400,20 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
               </div>
             </div>
           </div>
+          {isParentAccount && (
+            <div className="flex items-center gap-3 pt-2 mt-1 border-t border-slate-100">
+              <input
+                type="checkbox"
+                id="showDatewise"
+                checked={showDatewise}
+                onChange={e => setShowDatewise(e.target.checked)}
+                className="w-4 h-4 accent-emerald-600 cursor-pointer"
+              />
+              <label htmlFor="showDatewise" className="text-[11px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer select-none">
+                Show Datewise
+              </label>
+            </div>
+          )}
         </div>
       </div>
 
@@ -355,54 +427,97 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 print:bg-slate-100">
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Date</th>
-                {isParentAccount && (
-                  <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Account</th>
+                <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Date</th>
+                {showAccountColumn && (
+                  <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Account</th>
                 )}
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Debit (Dr)</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Credit (Cr)</th>
-                <th className="px-8 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Balance</th>
+                <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Description</th>
+                <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Credit (Cr)</th>
+                <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Debit (Dr)</th>
+                <th className="px-4 py-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest text-right">Balance</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {reportData.map((entry, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
-                  <td className="px-8 py-5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>
-                  {isParentAccount && (
-                    <td className="px-8 py-5 text-[12px] font-bold text-slate-500 uppercase tracking-tight whitespace-nowrap">
-                      {entry.accountId ? (accountNameMap[entry.accountId] || '-') : '-'}
+              {!showDatewise && groupedReportData ? (
+                groupedReportData.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-24 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
+                      NO TRANSACTION RECORDS FOUND.
                     </td>
+                  </tr>
+                ) : (
+                  <>
+                    {groupedReportData.map(({ account, entries, grpDr, grpCr, closingBalance, closingBalanceType }) => (
+                      <React.Fragment key={account.id}>
+                        <tr className="bg-emerald-50/60 border-t-2 border-emerald-100">
+                          <td colSpan={5} className="px-4 py-1.5 text-[11px] font-black text-emerald-800 uppercase tracking-widest">
+                            {account.name}
+                          </td>
+                        </tr>
+                        {entries.map((entry, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="px-4 py-1.5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>
+                            <td className="px-4 py-1.5 text-[12px] font-bold text-slate-800 uppercase tracking-tight">{entry.description}</td>
+                            <td className="px-4 py-1.5 text-[12px] text-emerald-600 text-right font-bold tabular-nums font-mono tracking-tight">{entry.credit > 0 ? formatCurrency(entry.credit) : '-'}</td>
+                            <td className="px-4 py-1.5 text-[12px] text-rose-500 text-right font-bold tabular-nums font-mono tracking-tight">{entry.debit > 0 ? formatCurrency(entry.debit) : '-'}</td>
+                            <td className="px-4 py-1.5 text-[12px] text-slate-900 text-right font-bold tabular-nums font-mono tracking-tight">
+                              {formatCurrency(entry.balance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{entry.balanceType}</span>
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-slate-50/80 border-b-2 border-slate-200">
+                          <td colSpan={2} className="px-4 py-2 text-right text-slate-500 text-[10px] font-black tracking-widest uppercase">Subtotal:</td>
+                          <td className="px-4 py-2 text-right text-emerald-600 font-black text-[13px] tabular-nums font-mono">{formatCurrency(grpCr)}</td>
+                          <td className="px-4 py-2 text-right text-rose-500 font-black text-[13px] tabular-nums font-mono">{formatCurrency(grpDr)}</td>
+                          <td className="px-4 py-2 text-right text-slate-900 font-black text-[13px] tabular-nums font-mono tracking-tight">
+                            {formatCurrency(closingBalance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{closingBalanceType}</span>
+                          </td>
+                        </tr>
+                      </React.Fragment>
+                    ))}
+                  </>
+                )
+              ) : (
+                <>
+                  {reportData.map((entry, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-4 py-1.5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>
+                      {showAccountColumn && (
+                        <td className="px-4 py-1.5 text-[12px] font-bold text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                          {entry.accountId ? (accountNameMap[entry.accountId] || '-') : '-'}
+                        </td>
+                      )}
+                      <td className="px-4 py-1.5 text-[12px] font-bold text-slate-800 uppercase tracking-tight">
+                        {entry.description}
+                      </td>
+                      <td className="px-4 py-1.5 text-[12px] text-emerald-600 text-right font-bold tabular-nums font-mono tracking-tight">
+                        {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                      </td>
+                      <td className="px-4 py-1.5 text-[12px] text-rose-500 text-right font-bold tabular-nums font-mono tracking-tight">
+                        {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                      </td>
+                      <td className="px-4 py-1.5 text-[12px] text-slate-900 text-right font-bold tabular-nums font-mono tracking-tight">
+                        {formatCurrency(entry.balance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{entry.balanceType}</span>
+                      </td>
+                    </tr>
+                  ))}
+                  {reportData.length === 0 && (
+                    <tr>
+                      <td colSpan={showAccountColumn ? 6 : 5} className="px-4 py-16 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
+                        {filters.accountId ? 'NO TRANSACTION RECORDS FOUND.' : 'SELECT AN ACCOUNT TO VIEW ACTIVITY.'}
+                      </td>
+                    </tr>
                   )}
-                  <td className="px-8 py-5 text-[12px] font-bold text-slate-800 uppercase tracking-tight">
-                    {entry.description}
-                  </td>
-                  <td className="px-8 py-5 text-[12px] text-rose-500 text-right font-bold tabular-nums font-mono tracking-tight">
-                    {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                  </td>
-                  <td className="px-8 py-5 text-[12px] text-emerald-600 text-right font-bold tabular-nums font-mono tracking-tight">
-                    {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                  </td>
-                  <td className="px-8 py-5 text-[12px] text-slate-900 text-right font-bold tabular-nums font-mono tracking-tight">
-                    {formatCurrency(entry.balance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{entry.balanceType}</span>
-                  </td>
-                </tr>
-              ))}
-              {reportData.length === 0 && (
-                <tr>
-                  <td colSpan={isParentAccount ? 6 : 5} className="px-8 py-24 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
-                    {filters.accountId ? 'NO TRANSACTION RECORDS FOUND.' : 'SELECT AN ACCOUNT TO VIEW ACTIVITY.'}
-                  </td>
-                </tr>
+                </>
               )}
             </tbody>
             {reportData.length > 0 && (
               <tfoot className="bg-slate-50 font-bold print:bg-slate-100 uppercase">
                 <tr>
-                  <td colSpan={isParentAccount ? 3 : 2} className="px-8 py-6 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Movement Summary:</td>
-                  <td className="px-8 py-6 text-right text-rose-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalDr)}</td>
-                  <td className="px-8 py-6 text-right text-emerald-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalCr)}</td>
-                  <td className="px-8 py-6 text-right text-slate-900 font-black text-[15px] tabular-nums tracking-tighter font-mono">
+                  <td colSpan={showAccountColumn ? 3 : 2} className="px-4 py-3 text-right text-slate-800 text-[11px] font-bold tracking-widest uppercase">Movement Summary:</td>
+                  <td className="px-4 py-3 text-right text-emerald-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalCr)}</td>
+                  <td className="px-4 py-3 text-right text-rose-600 font-black text-[15px] tabular-nums font-mono">{formatCurrency(totalDr)}</td>
+                  <td className="px-4 py-3 text-right text-slate-900 font-black text-[15px] tabular-nums tracking-tighter font-mono">
                   {formatCurrency(reportData[reportData.length - 1].balance)} <span className="text-[10px] text-slate-400 font-bold ml-2">{reportData[reportData.length - 1].balanceType}</span>
                   </td>
                 </tr>

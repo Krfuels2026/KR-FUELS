@@ -48,8 +48,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
     let total = 0;
     const process = (id: string) => {
       const children = accounts.filter(a => a.parentId === id);
-      const acc = accounts.find(a => a.id === id);
-      if (acc) total += (acc.openingDebit - acc.openingCredit);
+      // Opening balances excluded from calculations — stored for reference only
       children.forEach(child => process(child.id));
     };
     process(parentId);
@@ -98,7 +97,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return children.map((account) => {
-      const balance = account.openingDebit - account.openingCredit;
+      const balance = 0; // Opening balances excluded from calculations
       return (
         <React.Fragment key={account.id}>
           <div className="group flex items-center justify-between py-2.5 px-6 hover:bg-slate-50 transition-all border-b border-slate-50/50 relative">

@@ -49,11 +49,9 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
 
   const reportData = useMemo(() => {
     const dayVouchers = vouchers.filter(v => v.date === selectedDate);
-    // Include ALL accounts (root + children) for opening balance
-    const openingBalancesSum = accounts.reduce((sum, a) => sum + (a.openingDebit - a.openingCredit), 0);
-    // Past vouchers: CR grew the CR balance (subtract), DR reduced it (add)
+    // Opening balances excluded from calculations — stored for reference only
     const pastVouchersSum = vouchers.filter(v => v.date < selectedDate).reduce((sum, v) => sum + (v.debit - v.credit), 0);
-    const openingBalance = openingBalancesSum + pastVouchersSum;
+    const openingBalance = pastVouchersSum;
     const totalDr = dayVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = dayVouchers.reduce((sum, v) => sum + v.credit, 0);
     // Closing = Opening + Inflow − Outflow
