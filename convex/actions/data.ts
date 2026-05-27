@@ -220,6 +220,21 @@ export const deleteBunk = action({
   },
 });
 
+export const updateBunkOpeningBalance = action({
+  args: {
+    token: v.string(),
+    id: v.id("bunks"),
+    openingBalance: v.number(),
+  },
+  handler: async (ctx, args) => {
+    requireAuth(args.token);
+    return await ctx.runMutation(internal.mutations.bunks.updateBunkOpeningBalance, {
+      id: args.id,
+      openingBalance: args.openingBalance,
+    });
+  },
+});
+
 // ── Users (super_admin only) ──────────────────────────────────────────────────
 
 export const deleteUser = action({

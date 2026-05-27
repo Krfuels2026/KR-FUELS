@@ -17,6 +17,19 @@ export const createBunk = internalMutation({
   },
 });
 
+export const updateBunkOpeningBalance = internalMutation({
+  args: {
+    id: v.id("bunks"),
+    openingBalance: v.number(), // signed: positive = Dr, negative = Cr
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Bunk not found");
+    await ctx.db.patch(args.id, { openingBalance: args.openingBalance });
+    return { success: true };
+  },
+});
+
 export const deleteBunk = internalMutation({
   args: { id: v.id("bunks") },
   handler: async (ctx, args) => {

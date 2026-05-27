@@ -21,9 +21,10 @@ interface DashboardProps {
   locationName: string;
   onDeleteVoucher: (id: string) => void;
   reminders?: Reminder[];
+  bunkOpeningBalance?: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName, onDeleteVoucher, reminders = [] }) => {
+const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName, onDeleteVoucher, reminders = [], bunkOpeningBalance = 0 }) => {
   const getLocalISODate = (date: Date) => {
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -51,7 +52,7 @@ const Dashboard: React.FC<DashboardProps> = ({ accounts, vouchers, locationName,
     const dayVouchers = vouchers.filter(v => v.date === selectedDate);
     // Opening balances excluded from calculations — stored for reference only
     const pastVouchersSum = vouchers.filter(v => v.date < selectedDate).reduce((sum, v) => sum + (v.debit - v.credit), 0);
-    const openingBalance = pastVouchersSum;
+    const openingBalance = bunkOpeningBalance + pastVouchersSum;
     const totalDr = dayVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = dayVouchers.reduce((sum, v) => sum + v.credit, 0);
     // Closing = Opening + Inflow − Outflow

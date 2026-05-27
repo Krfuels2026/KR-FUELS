@@ -10,11 +10,12 @@ interface CashReportProps {
   accounts: Account[];
   vouchers: Voucher[];
   onDeleteVoucher: (id: string) => void;
+  bunkOpeningBalance?: number;
 }
 
 type FilterType = 'daily' | 'monthly' | 'ytd' | 'financial_year' | 'custom';
 
-const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVoucher }) => {
+const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVoucher, bunkOpeningBalance = 0 }) => {
   const [filterType, setFilterType] = useState<FilterType>('daily');
   const [showFilterPopup, setShowFilterPopup] = useState(false);
   
@@ -255,7 +256,7 @@ const CashReport: React.FC<CashReportProps> = ({ accounts, vouchers, onDeleteVou
     const pastVouchers = vouchers.filter(v => v.date < range.from);
     const pastVouchersSum = pastVouchers.reduce((sum, v) => sum + (v.debit - v.credit), 0);
 
-    const openingBalance = pastVouchersSum;
+    const openingBalance = bunkOpeningBalance + pastVouchersSum;
     const totalDr = periodVouchers.reduce((sum, v) => sum + v.debit, 0);
     const totalCr = periodVouchers.reduce((sum, v) => sum + v.credit, 0);
     // Opening + Inflow − Outflow

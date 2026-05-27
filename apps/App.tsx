@@ -125,6 +125,7 @@ const App: React.FC = () => {
         name: b.name,
         code: b.code,
         location: b.location,
+        openingBalance: b.openingBalance ?? 0,
       })));
     }
   }, [convexBunks]);
@@ -276,6 +277,7 @@ const App: React.FC = () => {
                 vouchers={bunkVouchers} 
                 locationName={currentBunk?.location || ''} 
                 onDeleteVoucher={deleteVoucher}
+                bunkOpeningBalance={currentBunk?.openingBalance ?? 0}
                 reminders={
                   (convexReminders || []).map((r: any) => ({
                     id: r._id,
@@ -290,12 +292,12 @@ const App: React.FC = () => {
               />
             } 
           />
-          <Route path="/accounts" element={<AccountsList accounts={bunkAccounts} deleteAccount={deleteAccount} onUpdateAccount={updateAccount} />} />
+          <Route path="/accounts" element={<AccountsList accounts={bunkAccounts} vouchers={bunkVouchers} deleteAccount={deleteAccount} onUpdateAccount={updateAccount} />} />
           <Route path="/account-master" element={<AccountMaster accounts={bunkAccounts} onSave={addAccount} onUpdate={updateAccount} onDelete={deleteAccount} />} />
           <Route path="/account-master/:id" element={<AccountMaster accounts={bunkAccounts} onSave={addAccount} onUpdate={updateAccount} onDelete={deleteAccount} />} />
-          <Route path="/vouchers" element={<DailyVoucher accounts={bunkAccounts} vouchers={bunkVouchers} onSave={addVoucher} onUpdateVoucher={updateVoucher} onDeleteVoucher={deleteVoucher} />} />
+          <Route path="/vouchers" element={<DailyVoucher accounts={bunkAccounts} vouchers={bunkVouchers} onSave={addVoucher} onUpdateVoucher={updateVoucher} onDeleteVoucher={deleteVoucher} bunkOpeningBalance={currentBunk?.openingBalance ?? 0} />} />
           <Route path="/ledger" element={<LedgerReport accounts={bunkAccounts} vouchers={bunkVouchers} />} />
-          <Route path="/cash-report" element={<CashReport accounts={bunkAccounts} vouchers={bunkVouchers} onDeleteVoucher={deleteVoucher} />} />
+          <Route path="/cash-report" element={<CashReport accounts={bunkAccounts} vouchers={bunkVouchers} onDeleteVoucher={deleteVoucher} bunkOpeningBalance={currentBunk?.openingBalance ?? 0} />} />
           <Route path="/reminders" element={<Reminders />} />
           {currentUser.role === 'super_admin' && (
             <Route path="/administration" element={<Administration />} />

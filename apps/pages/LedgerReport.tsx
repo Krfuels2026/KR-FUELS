@@ -32,7 +32,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     };
   });
 
-  const [showDatewise, setShowDatewise] = useState(true);
+
 
   const handleOpenPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
     if (ref.current) {
@@ -64,10 +64,10 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     return map;
   }, [accounts]);
 
-  const showAccountColumn = isParentAccount && showDatewise;
+  const showAccountColumn = false;
 
   const groupedReportData = useMemo(() => {
-    if (showDatewise || !isParentAccount || !filters.accountId) return null;
+    if (!isParentAccount || !filters.accountId) return null;
 
     const getLeafIds = (accId: string): string[] => {
       const children = accounts.filter(a => a.parentId === accId);
@@ -96,24 +96,28 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
         const accVouchers = vouchers.filter(v => v.accountId === accId);
         const entries = calculateLedger(account, accVouchers, filters.fromDate, filters.toDate);
         if (entries.length === 0) return null;
+        const periodOpeningBalance = (account.openingDebit - account.openingCredit)
+          + accVouchers.filter(v => v.date < filters.fromDate).reduce((s, v) => s + (v.debit - v.credit), 0);
         const grpDr = entries.reduce((s, e) => s + e.debit, 0);
         const grpCr = entries.reduce((s, e) => s + e.credit, 0);
         const last = entries[entries.length - 1];
-        return { account, entries, grpDr, grpCr, closingBalance: last.balance, closingBalanceType: last.balanceType };
+        return { account, entries, grpDr, grpCr, closingBalance: last.balance, closingBalanceType: last.balanceType, periodOpeningBalance };
       })
       .filter((g): g is NonNullable<typeof g> => g !== null);
-  }, [showDatewise, isParentAccount, filters, accounts, vouchers]);
+  }, [isParentAccount, filters, accounts, vouchers]);
 
   const reportData = useMemo(() => {
     if (!selectedAccount) return [];
 
     if (filters.accountId === ALL_ACCOUNTS_ID) {
+      const allLeafAccounts = accounts.filter(a => !accounts.some(b => b.parentId === a.id));
+      const allOpeningNet = allLeafAccounts.reduce((s, a) => s + (a.openingDebit - a.openingCredit), 0);
       const allAccountsObj: Account = {
         id: ALL_ACCOUNTS_ID,
         name: 'All Accounts',
         parentId: null,
-        openingDebit: 0,
-        openingCredit: 0,
+        openingDebit: allOpeningNet > 0 ? allOpeningNet : 0,
+        openingCredit: allOpeningNet < 0 ? Math.abs(allOpeningNet) : 0,
         createdAt: 0,
         bunkId: '',
       };
@@ -132,11 +136,12 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     const targetAccountIds = getDescendantIds(filters.accountId);
     const targetAccounts = accounts.filter(a => targetAccountIds.includes(a.id));
 
-    // Opening balances excluded from calculations — stored for reference only
+    const leafAccounts = targetAccounts.filter(a => !accounts.some(b => b.parentId === a.id));
+    const leafOpeningNet = leafAccounts.reduce((s, a) => s + (a.openingDebit - a.openingCredit), 0);
     const consolidatedAccount: Account = {
       ...selectedAccount,
-      openingDebit: 0,
-      openingCredit: 0,
+      openingDebit: leafOpeningNet > 0 ? leafOpeningNet : 0,
+      openingCredit: leafOpeningNet < 0 ? Math.abs(leafOpeningNet) : 0,
     };
 
     const filteredVouchers = vouchers.filter(v => targetAccountIds.includes(v.accountId));
@@ -146,24 +151,25 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
   const totalDr = reportData.reduce((sum, e) => sum + e.debit, 0);
   const totalCr = reportData.reduce((sum, e) => sum + e.credit, 0);
 
+  const reportPeriodOpening = useMemo(() => {
+    if (!selectedAccount || isParentAccount || !filters.accountId || filters.accountId === ALL_ACCOUNTS_ID) return null;
+    const accVouchers = vouchers.filter(v => v.accountId === filters.accountId);
+    return (selectedAccount.openingDebit - selectedAccount.openingCredit)
+      + accVouchers.filter(v => v.date < filters.fromDate).reduce((s, v) => s + (v.debit - v.credit), 0);
+  }, [selectedAccount, isParentAccount, vouchers, filters]);
+
   const handleExportExcel = async () => {
-    if (reportData.length === 0) return;
+    const hasData = groupedReportData ? groupedReportData.length > 0 : reportData.length > 0;
+    if (!hasData) return;
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Ledger Report');
-    const colCount = isParentAccount ? 6 : 5;
-
-    if (isParentAccount) {
-      ws.columns = [
-        { width: 16 }, { width: 24 }, { width: 32 },
-        { width: 18 }, { width: 18 }, { width: 22 },
-      ];
-    } else {
-      ws.columns = [
-        { width: 16 }, { width: 36 },
-        { width: 18 }, { width: 18 }, { width: 22 },
-      ];
-    }
+    // Columns: DATE | DESCRIPTION | CREDIT (CR) | DEBIT (DR) | BALANCE
+    const colCount = 5;
+    ws.columns = [
+      { width: 16 }, { width: 36 },
+      { width: 18 }, { width: 18 }, { width: 22 },
+    ];
 
     const headerFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: '166534' } };
     const headerFont: Partial<ExcelJS.Font> = { bold: true, color: { argb: 'FFFFFF' }, size: 11 };
@@ -203,9 +209,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
     ws.addRow([]);
 
     // Column headers
-    const headers = isParentAccount
-      ? ['DATE', 'ACCOUNT', 'DESCRIPTION', 'DEBIT (DR)', 'CREDIT (CR)', 'BALANCE']
-      : ['DATE', 'DESCRIPTION', 'DEBIT (DR)', 'CREDIT (CR)', 'BALANCE'];
+    const headers = ['DATE', 'DESCRIPTION', 'CREDIT (CR)', 'DEBIT (DR)', 'BALANCE'];
     const hRow = ws.addRow(headers);
     hRow.height = 28;
     hRow.eachCell((cell) => {
@@ -215,93 +219,166 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
       cell.border = borderThin;
     });
 
-    // Data rows
+    // Column index constants (1-based)
+    const crColIdx = 3;
+    const drColIdx = 4;
+    const balColIdx = 5;
+
     const altFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F8FAFC' } };
-    const drColIdx = isParentAccount ? 4 : 3;
-    const crColIdx = isParentAccount ? 5 : 4;
-    const balColIdx = isParentAccount ? 6 : 5;
-    const descColIdx = isParentAccount ? 3 : 2;
+    const groupFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'ECFDF5' } };
+    const subtotalFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+    const borderMedium: Partial<ExcelJS.Borders> = {
+      top: { style: 'medium', color: { argb: '94A3B8' } },
+      bottom: { style: 'medium', color: { argb: '94A3B8' } },
+      left: { style: 'thin', color: { argb: 'E2E8F0' } },
+      right: { style: 'thin', color: { argb: 'E2E8F0' } },
+    };
 
-    reportData.forEach((entry, idx) => {
-      const rowData = isParentAccount
-        ? [
-            formatDateToDDMMYYYY(entry.date),
-            entry.accountId ? (accountNameMap[entry.accountId] || '-').toUpperCase() : '-',
-            entry.description.toUpperCase(),
-            entry.debit > 0 ? entry.debit : '',
-            entry.credit > 0 ? entry.credit : '',
-            entry.balance,
-          ]
-        : [
-            formatDateToDDMMYYYY(entry.date),
-            entry.description.toUpperCase(),
-            entry.debit > 0 ? entry.debit : '',
-            entry.credit > 0 ? entry.credit : '',
-            entry.balance,
-          ];
-      const row = ws.addRow(rowData);
-      row.height = 22;
-      row.eachCell({ includeEmpty: true }, (cell, colNum) => {
-        cell.border = borderThin;
-        cell.font = { size: 10 };
-        if (idx % 2 === 1) cell.fill = altFill;
-
-        if (colNum <= descColIdx) {
-          cell.alignment = { horizontal: 'left', vertical: 'middle' };
-          cell.font = { size: 10, bold: true };
-        }
-        if (colNum === drColIdx) {
-          cell.alignment = { horizontal: 'right', vertical: 'middle' };
-          cell.numFmt = '#,##0.00';
-          if (entry.debit > 0) cell.font = { size: 10, bold: true, color: { argb: 'E11D48' } };
-        }
-        if (colNum === crColIdx) {
-          cell.alignment = { horizontal: 'right', vertical: 'middle' };
-          cell.numFmt = '#,##0.00';
-          if (entry.credit > 0) cell.font = { size: 10, bold: true, color: { argb: '059669' } };
-        }
-        if (colNum === balColIdx) {
-          cell.alignment = { horizontal: 'right', vertical: 'middle' };
-          cell.numFmt = '#,##0.00';
-          cell.font = { size: 10, bold: true, color: { argb: '0F172A' } };
-        }
-      });
-    });
-
-    // Total / Summary row
-    const lastEntry = reportData[reportData.length - 1];
-    const totalRowData = isParentAccount
-      ? ['', '', 'MOVEMENT SUMMARY', totalDr, totalCr, lastEntry.balance]
-      : ['', 'MOVEMENT SUMMARY', totalDr, totalCr, lastEntry.balance];
-    const totalRow = ws.addRow(totalRowData);
-    totalRow.height = 28;
-    const totalFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
-    totalRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
-      cell.border = {
-        top: { style: 'medium', color: { argb: '94A3B8' } },
-        bottom: { style: 'medium', color: { argb: '94A3B8' } },
-        left: { style: 'thin', color: { argb: 'E2E8F0' } },
-        right: { style: 'thin', color: { argb: 'E2E8F0' } },
-      };
-      cell.fill = totalFill;
-      cell.font = { bold: true, size: 11, color: { argb: '0F172A' } };
-      if (colNum === descColIdx) cell.alignment = { horizontal: 'right', vertical: 'middle' };
-      if (colNum === drColIdx) {
-        cell.alignment = { horizontal: 'right', vertical: 'middle' };
-        cell.numFmt = '#,##0.00';
-        cell.font = { bold: true, size: 12, color: { argb: 'E11D48' } };
+    const applyDataCell = (cell: ExcelJS.Cell, colNum: number, entry: { debit: number; credit: number; balance: number; balanceType: string }, rowIdx: number) => {
+      cell.border = borderThin;
+      cell.font = { size: 10 };
+      if (rowIdx % 2 === 1) cell.fill = altFill;
+      if (colNum <= 2) {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.font = { size: 10, bold: true };
       }
       if (colNum === crColIdx) {
         cell.alignment = { horizontal: 'right', vertical: 'middle' };
         cell.numFmt = '#,##0.00';
-        cell.font = { bold: true, size: 12, color: { argb: '059669' } };
+        if (entry.credit > 0) cell.font = { size: 10, bold: true, color: { argb: '059669' } };
+      }
+      if (colNum === drColIdx) {
+        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        cell.numFmt = '#,##0.00';
+        if (entry.debit > 0) cell.font = { size: 10, bold: true, color: { argb: 'E11D48' } };
       }
       if (colNum === balColIdx) {
         cell.alignment = { horizontal: 'right', vertical: 'middle' };
         cell.numFmt = '#,##0.00';
-        cell.font = { bold: true, size: 12, color: { argb: '0F172A' } };
+        cell.font = { size: 10, bold: true, color: { argb: '0F172A' } };
       }
-    });
+    };
+
+    if (groupedReportData) {
+      // Grouped export: subaccount header → opening balance → rows → subtotal → period net
+      groupedReportData.forEach(({ account, entries, grpDr, grpCr, closingBalance, closingBalanceType, periodOpeningBalance }) => {
+        // Sub-account header row
+        const grpHeaderRow = ws.addRow([account.name.toUpperCase(), '', '', '', '']);
+        ws.mergeCells(grpHeaderRow.number, 1, grpHeaderRow.number, colCount);
+        grpHeaderRow.height = 20;
+        grpHeaderRow.getCell(1).fill = groupFill;
+        grpHeaderRow.getCell(1).font = { bold: true, size: 11, color: { argb: '166534' } };
+        grpHeaderRow.getCell(1).alignment = { horizontal: 'left', vertical: 'middle' };
+        grpHeaderRow.getCell(1).border = { top: { style: 'medium', color: { argb: '166534' } }, bottom: { style: 'thin', color: { argb: 'BBF7D0' } }, left: borderThin.left, right: borderThin.right };
+
+        // Opening balance row (only if present)
+        if (periodOpeningBalance !== 0) {
+          const obRow = ws.addRow(['', 'OPENING BALANCE', '', '', Math.abs(periodOpeningBalance)]);
+          obRow.height = 18;
+          obRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFBEB' } };
+            cell.border = borderThin;
+            cell.font = { bold: true, size: 10, italic: true, color: { argb: 'B45309' } };
+            if (colNum === 2) cell.alignment = { horizontal: 'left', vertical: 'middle' };
+            if (colNum === balColIdx) {
+              cell.alignment = { horizontal: 'right', vertical: 'middle' };
+              cell.numFmt = '#,##0.00';
+              const obLabel = periodOpeningBalance >= 0 ? ' DR' : ' CR';
+              cell.value = `${Math.abs(periodOpeningBalance).toFixed(2)} ${obLabel.trim()}`;
+            }
+          });
+        }
+
+        // Data rows
+        entries.forEach((entry, idx) => {
+          const row = ws.addRow([
+            formatDateToDDMMYYYY(entry.date),
+            entry.description.toUpperCase(),
+            entry.credit > 0 ? entry.credit : '',
+            entry.debit > 0 ? entry.debit : '',
+            entry.balance,
+          ]);
+          row.height = 20;
+          row.eachCell({ includeEmpty: true }, (cell, colNum) => applyDataCell(cell, colNum, entry, idx));
+        });
+
+        // Subtotal row
+        const subRow = ws.addRow(['', 'SUBTOTAL', grpCr, grpDr, closingBalance]);
+        subRow.height = 22;
+        subRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+          cell.fill = subtotalFill;
+          cell.border = borderMedium;
+          cell.font = { bold: true, size: 11, color: { argb: '0F172A' } };
+          if (colNum === 2) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          if (colNum === crColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 11, color: { argb: '059669' } }; }
+          if (colNum === drColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 11, color: { argb: 'E11D48' } }; }
+          if (colNum === balColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; }
+        });
+
+        // Period Net row (Cr or Dr column only, balance column blank)
+        const periodNet = grpCr - grpDr;
+        const periodNetAbs = Math.abs(periodNet);
+        const isCrNet = periodNet >= 0;
+        const netRowValues = ['', 'PERIOD NET (EXCL. OPENING)', isCrNet ? periodNetAbs : '', !isCrNet ? periodNetAbs : '', ''];
+        const netRow = ws.addRow(netRowValues);
+        netRow.height = 18;
+        netRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+          cell.border = borderThin;
+          cell.font = { bold: true, size: 10, italic: true, color: { argb: '64748B' } };
+          if (colNum === 2) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; }
+          if (colNum === crColIdx && isCrNet) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 10, color: { argb: '059669' } }; }
+          if (colNum === drColIdx && !isCrNet) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 10, color: { argb: 'E11D48' } }; }
+        });
+
+        // blank spacer
+        ws.addRow([]);
+      });
+
+      // Overall movement summary
+      const grandDr = groupedReportData.reduce((s, g) => s + g.grpDr, 0);
+      const grandCr = groupedReportData.reduce((s, g) => s + g.grpCr, 0);
+      const lastGroup = groupedReportData[groupedReportData.length - 1];
+      const totalRow = ws.addRow(['', 'MOVEMENT SUMMARY', grandCr, grandDr, lastGroup.closingBalance]);
+      totalRow.height = 28;
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DBEAFE' } };
+        cell.border = borderMedium;
+        cell.font = { bold: true, size: 12, color: { argb: '0F172A' } };
+        if (colNum === 2) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        if (colNum === crColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 12, color: { argb: '059669' } }; }
+        if (colNum === drColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 12, color: { argb: 'E11D48' } }; }
+        if (colNum === balColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; }
+      });
+    } else {
+      // Flat export for leaf accounts
+      reportData.forEach((entry, idx) => {
+        const row = ws.addRow([
+          formatDateToDDMMYYYY(entry.date),
+          entry.description.toUpperCase(),
+          entry.credit > 0 ? entry.credit : '',
+          entry.debit > 0 ? entry.debit : '',
+          entry.balance,
+        ]);
+        row.height = 22;
+        row.eachCell({ includeEmpty: true }, (cell, colNum) => applyDataCell(cell, colNum, entry, idx));
+      });
+
+      // Summary row
+      const lastEntry = reportData[reportData.length - 1];
+      const totalRow = ws.addRow(['', 'MOVEMENT SUMMARY', totalCr, totalDr, lastEntry.balance]);
+      totalRow.height = 28;
+      const totalFill: ExcelJS.FillPattern = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+      totalRow.eachCell({ includeEmpty: true }, (cell, colNum) => {
+        cell.fill = totalFill;
+        cell.border = borderMedium;
+        cell.font = { bold: true, size: 11, color: { argb: '0F172A' } };
+        if (colNum === 2) cell.alignment = { horizontal: 'right', vertical: 'middle' };
+        if (colNum === crColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 12, color: { argb: '059669' } }; }
+        if (colNum === drColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; cell.font = { bold: true, size: 12, color: { argb: 'E11D48' } }; }
+        if (colNum === balColIdx) { cell.alignment = { horizontal: 'right', vertical: 'middle' }; cell.numFmt = '#,##0.00'; }
+      });
+    }
 
     // Footer
     ws.addRow([]);
@@ -400,20 +477,6 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
               </div>
             </div>
           </div>
-          {isParentAccount && (
-            <div className="flex items-center gap-3 pt-2 mt-1 border-t border-slate-100">
-              <input
-                type="checkbox"
-                id="showDatewise"
-                checked={showDatewise}
-                onChange={e => setShowDatewise(e.target.checked)}
-                className="w-4 h-4 accent-emerald-600 cursor-pointer"
-              />
-              <label htmlFor="showDatewise" className="text-[11px] font-bold text-slate-600 uppercase tracking-widest cursor-pointer select-none">
-                Show Datewise
-              </label>
-            </div>
-          )}
         </div>
       </div>
 
@@ -438,7 +501,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {!showDatewise && groupedReportData ? (
+              {groupedReportData ? (
                 groupedReportData.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-8 py-24 text-center text-slate-300 font-bold italic uppercase tracking-widest text-[12px]">
@@ -447,13 +510,23 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
                   </tr>
                 ) : (
                   <>
-                    {groupedReportData.map(({ account, entries, grpDr, grpCr, closingBalance, closingBalanceType }) => (
+                    {groupedReportData.map(({ account, entries, grpDr, grpCr, closingBalance, closingBalanceType, periodOpeningBalance }) => (
                       <React.Fragment key={account.id}>
                         <tr className="bg-emerald-50/60 border-t-2 border-emerald-100">
                           <td colSpan={5} className="px-4 py-1.5 text-[11px] font-black text-emerald-800 uppercase tracking-widest">
                             {account.name}
                           </td>
                         </tr>
+                        {periodOpeningBalance !== 0 && (
+                          <tr className="bg-amber-50/50 border-b border-amber-100">
+                            <td colSpan={2} className="px-4 py-1 text-[10px] font-black text-amber-600 uppercase tracking-widest italic">Opening Balance</td>
+                            <td className="px-4 py-1 text-right text-[11px] text-slate-300 tabular-nums font-mono">—</td>
+                            <td className="px-4 py-1 text-right text-[11px] text-slate-300 tabular-nums font-mono">—</td>
+                            <td className="px-4 py-1 text-[12px] text-amber-700 text-right font-bold tabular-nums font-mono">
+                              {formatCurrency(Math.abs(periodOpeningBalance))} <span className="text-[10px] font-bold ml-1 uppercase">{periodOpeningBalance >= 0 ? 'DR' : 'CR'}</span>
+                            </td>
+                          </tr>
+                        )}
                         {entries.map((entry, idx) => (
                           <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-4 py-1.5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>
@@ -465,7 +538,7 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
                             </td>
                           </tr>
                         ))}
-                        <tr className="bg-slate-50/80 border-b-2 border-slate-200">
+                        <tr className="bg-slate-50/80 border-b border-slate-200">
                           <td colSpan={2} className="px-4 py-2 text-right text-slate-500 text-[10px] font-black tracking-widest uppercase">Subtotal:</td>
                           <td className="px-4 py-2 text-right text-emerald-600 font-black text-[13px] tabular-nums font-mono">{formatCurrency(grpCr)}</td>
                           <td className="px-4 py-2 text-right text-rose-500 font-black text-[13px] tabular-nums font-mono">{formatCurrency(grpDr)}</td>
@@ -473,12 +546,39 @@ const LedgerReport: React.FC<LedgerReportProps> = ({ accounts, vouchers }) => {
                             {formatCurrency(closingBalance)} <span className="text-[10px] text-slate-400 font-bold ml-1 uppercase">{closingBalanceType}</span>
                           </td>
                         </tr>
+                        {(() => {
+                          const periodNet = grpCr - grpDr;
+                          const periodNetAbs = Math.abs(periodNet);
+                          const isCr = periodNet >= 0;
+                          return (
+                            <tr className="bg-slate-100/60 border-b-2 border-slate-200">
+                              <td colSpan={2} className="px-4 py-1.5 text-right text-slate-400 text-[9px] font-black tracking-widest uppercase italic">Period Net (excl. opening):</td>
+                              <td className="px-4 py-1.5 text-right font-black text-[12px] tabular-nums font-mono tracking-tight text-emerald-600">
+                                {isCr ? <>{formatCurrency(periodNetAbs)} <span className="text-[9px] font-bold ml-1 uppercase">CR</span></> : '—'}
+                              </td>
+                              <td className="px-4 py-1.5 text-right font-black text-[12px] tabular-nums font-mono tracking-tight text-rose-500">
+                                {!isCr ? <>{formatCurrency(periodNetAbs)} <span className="text-[9px] font-bold ml-1 uppercase">DR</span></> : '—'}
+                              </td>
+                              <td className="px-4 py-1.5 text-right text-slate-300 tabular-nums font-mono text-[11px]">—</td>
+                            </tr>
+                          );
+                        })()}
                       </React.Fragment>
                     ))}
                   </>
                 )
               ) : (
                 <>
+                  {reportPeriodOpening !== null && reportData.length > 0 && (
+                    <tr className="bg-amber-50/50 border-b border-amber-100">
+                      <td colSpan={2} className="px-4 py-1.5 text-[10px] font-black text-amber-600 uppercase tracking-widest italic">Opening Balance</td>
+                      <td className="px-4 py-1.5 text-right text-[11px] text-slate-300 tabular-nums font-mono">—</td>
+                      <td className="px-4 py-1.5 text-right text-[11px] text-slate-300 tabular-nums font-mono">—</td>
+                      <td className="px-4 py-1.5 text-[12px] text-amber-700 text-right font-bold tabular-nums font-mono">
+                        {formatCurrency(Math.abs(reportPeriodOpening))} <span className="text-[10px] font-bold ml-1 uppercase">{reportPeriodOpening >= 0 ? 'DR' : 'CR'}</span>
+                      </td>
+                    </tr>
+                  )}
                   {reportData.map((entry, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
                       <td className="px-4 py-1.5 text-[12px] font-bold text-slate-400 whitespace-nowrap tabular-nums uppercase">{formatDateToDDMMYYYY(entry.date)}</td>

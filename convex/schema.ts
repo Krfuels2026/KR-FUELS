@@ -14,6 +14,7 @@ export default defineSchema({
     name: v.string(),       // 'KR FUELS - UDUMELPET'
     code: v.string(),       // 'UDM01' (unique, indexed)
     location: v.string(),   // 'Udumelpettai'
+    openingBalance: v.optional(v.number()), // signed: positive = Dr, negative = Cr
     createdAt: v.number(),  // Unix timestamp (ms)
   }).index("by_code", ["code"]),
 
