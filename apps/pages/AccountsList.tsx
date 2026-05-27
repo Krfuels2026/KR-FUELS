@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Account } from '../types';
+import { Account, Voucher } from '../types';
 import { 
   Search, 
   ChevronDown, 
@@ -21,11 +21,12 @@ import ConfirmDialog from '../components/ConfirmDialog';
 
 interface AccountsListProps {
   accounts: Account[];
+  vouchers: Voucher[];
   deleteAccount: (id: string) => void;
   onUpdateAccount?: (account: Account) => void;
 }
 
-const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, onUpdateAccount }) => {
+const AccountsList: React.FC<AccountsListProps> = ({ accounts, vouchers, deleteAccount, onUpdateAccount }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(accounts.filter(a => !a.parentId).map(a => a.id)));
@@ -44,15 +45,22 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
 
   const mainGroups = accounts.filter(a => a.parentId === null).sort((a, b) => a.name.localeCompare(b.name));
 
-  const calculateGroupBalance = (parentId: string) => {
-    let total = 0;
-    const process = (id: string) => {
-      const children = accounts.filter(a => a.parentId === id);
-      // Opening balances excluded from calculations — stored for reference only
-      children.forEach(child => process(child.id));
-    };
-    process(parentId);
-    return total;
+  const calculateLedgerBalance = (accountId: string): number => {
+    const account = accounts.find(a => a.id === accountId);
+    if (!account) return 0;
+    const opening = (account.openingDebit ?? 0) - (account.openingCredit ?? 0);
+    const txn = vouchers
+      .filter(v => v.accountId === accountId)
+      .reduce((sum, v) => sum + (v.debit - v.credit), 0);
+    return opening + txn;
+  };
+
+  const calculateGroupBalance = (parentId: string): number => {
+    const directChildren = accounts.filter(a => a.parentId === parentId);
+    return directChildren.reduce((sum, child) => {
+      const hasChildren = accounts.some(a => a.parentId === child.id);
+      return sum + (hasChildren ? calculateGroupBalance(child.id) : calculateLedgerBalance(child.id));
+    }, 0);
   };
 
   const initiateDelete = (account: Account) => {
@@ -97,7 +105,8 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return children.map((account) => {
-      const balance = 0; // Opening balances excluded from calculations
+      const isParent = accounts.some(a => a.parentId === account.id);
+      const balance = isParent ? calculateGroupBalance(account.id) : calculateLedgerBalance(account.id);
       return (
         <React.Fragment key={account.id}>
           <div className="group flex items-center justify-between py-2.5 px-6 hover:bg-slate-50 transition-all border-b border-slate-50/50 relative">
@@ -109,7 +118,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
             )}
             
             <div className="flex items-center gap-3 flex-1" style={{ paddingLeft: `${depth * 1.2}rem` }}>
-              <div className={`w-1.5 h-1.5 rounded-full ${balance >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${balance < 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
               <div className="flex flex-col">
                 <span className="text-[13px] font-bold text-slate-800 group-hover:text-brand transition-colors leading-tight uppercase tracking-tight">
                   {account.name}
@@ -119,7 +128,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts, deleteAccount, on
 
             <div className="flex items-center gap-6">
               <div className="text-right min-w-[100px]">
-                <p className={`text-[12px] font-bold font-mono ${balance >= 0 ? 'text-slate-600' : 'text-rose-600'} tabular-nums`}>
+                <p className={`text-[12px] font-bold font-mono ${balance < 0 ? 'text-emerald-600' : 'text-rose-600'} tabular-nums`}>
                   {formatCurrency(Math.abs(balance)).replace('₹', '')}
                   <span className="ml-1 text-[9px] font-bold opacity-40 uppercase">{balance >= 0 ? 'DR' : 'CR'}</span>
                 </p>

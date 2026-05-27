@@ -29,9 +29,10 @@ interface DailyVoucherProps {
   onSave: (voucher: Partial<Voucher>) => void;
   onUpdateVoucher?: (voucher: Voucher) => void;
   onDeleteVoucher?: (id: string) => void;
+  bunkOpeningBalance?: number;
 }
 
-const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], onSave, onUpdateVoucher, onDeleteVoucher }) => {
+const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], onSave, onUpdateVoucher, onDeleteVoucher, bunkOpeningBalance = 0 }) => {
   const navigate = useNavigate();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLTableSectionElement>(null);
@@ -50,10 +51,10 @@ const DailyVoucher: React.FC<DailyVoucherProps> = ({ accounts, vouchers = [], on
   const ignoreHashChangeRef = useRef(false);
 
   const openingBalance = useMemo(() => {
-    // Opening balances excluded from calculations — stored for reference only
+    // Bunk opening balance + past vouchers
     const pastVouchersSum = vouchers.filter(v => v.date < date).reduce((sum, v) => sum + (v.debit - v.credit), 0);
-    return pastVouchersSum;
-  }, [accounts, vouchers, date]);
+    return bunkOpeningBalance + pastVouchersSum;
+  }, [bunkOpeningBalance, vouchers, date]);
 
   const totals = useMemo(() => {
     return rows.reduce((acc, row) => ({

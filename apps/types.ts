@@ -4,6 +4,7 @@ export interface Bunk {
   name: string;
   code: string;
   location: string;
+  openingBalance?: number; // signed: positive = Dr, negative = Cr
 }
 
 export interface User {

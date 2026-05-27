@@ -18,11 +18,12 @@ import {
   KeyRound,
   Settings2,
   Eye,
-  EyeOff
+  EyeOff,
+  Wallet
 } from 'lucide-react';
 
 const Administration: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'bunks' | 'users'>('bunks');
+  const [activeTab, setActiveTab] = useState<'bunks' | 'users' | 'opening_balance'>('bunks');
   const [isAddingBunk, setIsAddingBunk] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
 
@@ -45,6 +46,12 @@ const Administration: React.FC = () => {
   const [changeBunkUser, setChangeBunkUser] = useState<{ id: string; name: string; role: string } | null>(null);
   const [editBunkIds, setEditBunkIds] = useState<string[]>([]);
 
+  // Opening Balance update state
+  const [obBunkId, setObBunkId] = useState('');
+  const [obAmount, setObAmount] = useState('');
+  const [obType, setObType] = useState<'Dr' | 'Cr'>('Dr');
+  const [obSaving, setObSaving] = useState(false);
+
   const convexBunksRaw = useQuery(convexApi.queries.bunks.getAllBunks);
   const bunks: { id: string; name: string; code: string; location: string }[] = (convexBunksRaw ?? []).map((b: any) => ({ id: b._id as string, name: b.name as string, code: b.code as string, location: b.location as string }));
 
@@ -57,6 +64,7 @@ const Administration: React.FC = () => {
   const resetPasswordFn = useAction((convexApi.actions.auth as any).resetPassword);
   const deleteUserFn = useAction((convexApi.actions as any).data.deleteUser);
   const updateBunkAccessFn = useAction((convexApi.actions as any).data.updateBunkAccess);
+  const updateBunkOpeningBalanceFn = useAction((convexApi.actions as any).data.updateBunkOpeningBalance);
 
   // Protected read actions for sensitive user data
   const getAllUsersFn = useAction((convexApi.actions as any).data.getAllUsers);
@@ -166,6 +174,28 @@ const Administration: React.FC = () => {
       .map((a: any) => a.bunkId);
   };
 
+  const obSelectedBunk = (convexBunksRaw ?? []).find((b: any) => b._id === obBunkId);
+
+  const handleUpdateOpeningBalance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!obBunkId) return;
+    setObSaving(true);
+    const signed = (Number(obAmount) || 0) * (obType === 'Dr' ? 1 : -1);
+    try {
+      await updateBunkOpeningBalanceFn({
+        token: tok(),
+        id: obBunkId as any,
+        openingBalance: signed,
+      });
+      alert('Opening balance updated successfully.');
+      setObAmount('');
+    } catch (err: any) {
+      alert('Failed: ' + (err.message || err));
+    } finally {
+      setObSaving(false);
+    }
+  };
+
   const refreshUsers = () => {
     const t = tok();
     if (t) {
@@ -241,7 +271,109 @@ const Administration: React.FC = () => {
         >
           <Users size={14} className="md:w-4 md:h-4" /> Admin Users
         </button>
+        <button
+          onClick={() => setActiveTab('opening_balance')}
+          className={`px-4 py-2 md:px-8 md:py-2.5 rounded-xl font-bold text-[10px] md:text-[12px] uppercase tracking-widest transition-all flex items-center gap-1.5 md:gap-2.5 ${activeTab === 'opening_balance' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}
+        >
+          <Wallet size={14} className="md:w-4 md:h-4" /> Opening Balance
+        </button>
       </div>
+
+      {activeTab === 'opening_balance' && (
+        <div className="max-w-2xl space-y-6">
+          <div className="px-1">
+            <h2 className="text-[12px] md:text-[14px] font-black text-slate-900 uppercase tracking-tight">Update Opening Balance</h2>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <div className="px-8 py-5 border-b border-slate-100 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-brand flex-shrink-0">
+                <Wallet size={20} />
+              </div>
+              <div>
+                <p className="text-[13px] font-black text-slate-900 uppercase tracking-tight">Opening Balance Configuration</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateOpeningBalance} className="px-8 py-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Fuel Station (Bunk)</label>
+                <select
+                  required
+                  value={obBunkId}
+                  onChange={e => { setObBunkId(e.target.value); setObAmount(''); }}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-900 uppercase focus:border-brand focus:bg-white transition-all outline-none"
+                >
+                  <option value="">— Select a Fuel Station —</option>
+                  {bunks.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Opening Balance Amount</label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[13px]">₹</span>
+                    <input
+                      type="number" min="0" step="0.01" required
+                      value={obAmount}
+                      onChange={e => setObAmount(e.target.value)}
+                      disabled={!obBunkId}
+                      placeholder="0.00"
+                      className="w-full pl-9 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[18px] font-black text-slate-900 text-right focus:border-brand focus:bg-white transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed tracking-tight"
+                    />
+                  </div>
+                  <div className="flex rounded-xl border border-slate-200 overflow-hidden flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setObType('Dr')}
+                      className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest transition-all ${obType === 'Dr' ? 'bg-rose-500 text-white shadow-inner' : 'bg-slate-50 text-slate-400 hover:bg-rose-50 hover:text-rose-500'}`}
+                    >DR</button>
+                    <button
+                      type="button"
+                      onClick={() => setObType('Cr')}
+                      className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest transition-all ${obType === 'Cr' ? 'bg-emerald-500 text-white shadow-inner' : 'bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-500'}`}
+                    >CR</button>
+                  </div>
+                </div>
+              </div>
+
+              {obSelectedBunk && obSelectedBunk.openingBalance !== undefined && (
+                <div className="flex items-center gap-4 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div>
+                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">Current Opening Balance</p>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[22px] font-black text-amber-800 tabular-nums">₹{Math.abs(obSelectedBunk.openingBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase ${obSelectedBunk.openingBalance >= 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                        {obSelectedBunk.openingBalance >= 0 ? 'DR' : 'CR'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2 border-t border-slate-100 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setObBunkId(''); setObAmount(''); setObType('Dr'); }}
+                  className="px-8 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!obBunkId || obSaving}
+                  className="px-8 py-2.5 bg-brand text-white rounded-xl font-bold text-[11px] uppercase tracking-widest hover:bg-brand-hover shadow-lg shadow-emerald-500/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {obSaving ? 'Saving...' : 'Update Balance'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'bunks' && (
         <div className="space-y-4 md:space-y-6">

@@ -33,8 +33,7 @@ export const calculateLedger = (
   // Sort vouchers by date
   const sortedVouchers = [...vouchers].sort((a, b) => a.date.localeCompare(b.date));
   
-  // Opening balance excluded from calculations — stored for reference only
-  let runningBalance = 0;
+  let runningBalance = (account.openingDebit ?? 0) - (account.openingCredit ?? 0);
   
   const entries: LedgerEntry[] = [];
 
