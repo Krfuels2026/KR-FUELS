@@ -340,19 +340,6 @@ const Administration: React.FC = () => {
                 </div>
               </div>
 
-              {obSelectedBunk && obSelectedBunk.openingBalance !== undefined && (
-                <div className="flex items-center gap-4 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <div>
-                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-0.5">Current Opening Balance</p>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-[22px] font-black text-amber-800 tabular-nums">₹{Math.abs(obSelectedBunk.openingBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase ${obSelectedBunk.openingBalance >= 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {obSelectedBunk.openingBalance >= 0 ? 'DR' : 'CR'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <div className="flex gap-3 pt-2 border-t border-slate-100 justify-end">
                 <button
